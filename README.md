@@ -1,2 +1,2 @@
 # gem-search
-Mining for the Hidden Gems of the internet
+Mining the Hidden Gems of the internet
