@@ -22,7 +22,11 @@ const SearchBar: React.FC<SearchBarProps> = ({
       handleSearch();
     }
   };
-
+/*<div className = "button">
+  <Button variant="contained" color="primary" onClick={handleSearch} >
+    Search
+  </Button>
+</div>*/
   return (
     <div>
       <Box display="flex" justifyContent="center" alignItems="center" mt={2}>
@@ -35,11 +39,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
           style={{ marginRight: "10px", width: "600px" , backgroundColor: "white", borderRadius: "7px"}}
         />
       </Box>
-      <div className = "button">
-        <Button variant="contained" color="primary" onClick={handleSearch} >
-          Search
-        </Button>
-      </div>
+
     </div>
   );
 };
