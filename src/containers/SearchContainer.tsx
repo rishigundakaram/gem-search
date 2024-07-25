@@ -54,7 +54,6 @@ const SearchContainer: React.FC = () => {
             setQuery={setQuery}
             handleSearch={handleSearch}
           />
-          
           {error && <Typography color="error">{error}</Typography>}
           <SearchResults results={results} />
         </Container>
