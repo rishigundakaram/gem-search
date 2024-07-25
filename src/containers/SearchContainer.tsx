@@ -28,35 +28,36 @@ const SearchContainer: React.FC = () => {
   };
   return (
     <div>
-      <img src="/diamond.png" alt = "logo" style = {{height: "100px", width: "100px" ,position: "absolute"}}></img>
+      <img src="/diamond.png" alt = "logo" style = {{height: "100px", width: "100px", position: "absolute"}}></img>
       {searched === 'false' && (
-    <Container>
-      <Box mt={4} textAlign="center">
-        <Typography fontFamily= 'myFont' variant="h1">Hidden Gems</Typography>
-      </Box>
-      <SearchBar
-        query={query}
-        setQuery={setQuery}
-        handleSearch={handleSearch}
-      />
-      {error && <Typography color="error">{error}</Typography>}
-      <SearchResults results={results} />
-    </Container>
+        <Container>
+          <Box mt={4} textAlign="center">
+            <Typography color = 'white' fontFamily= 'myFont' variant="h1">Hidden Gems</Typography>
+            <Typography color = 'white' fontFamily= 'myFont' variant="h5">Search for hidden gems in the web</Typography>
+          </Box>
+          <SearchBar
+            query={query}
+            setQuery={setQuery}
+            handleSearch={handleSearch}
+          />
+          {error && <Typography color="error">{error}</Typography>}
+          <SearchResults results={results} />
+        </Container>
       )}
       {searched === 'true' && (
-            <Container>
-            <Box mt={4} textAlign="center">
-              <Typography fontFamily= 'myFont' variant="h4">Hidden Gems</Typography>
-            </Box>
-            <SearchBar
-              query={query}
-              setQuery={setQuery}
-              handleSearch={handleSearch}
-              
-            />
-            {error && <Typography color="error">{error}</Typography>}
-            <SearchResults results={results} />
-          </Container>
+        <Container>
+          <Box mt={4} textAlign="center">
+            <Typography color = 'white' fontFamily= 'myFont' variant="h4">Hidden Gems</Typography>
+          </Box>
+          <SearchBar
+            query={query}
+            setQuery={setQuery}
+            handleSearch={handleSearch}
+            
+          />
+          {error && <Typography color="error">{error}</Typography>}
+          <SearchResults results={results} />
+        </Container>
         )}
     </div>
   );

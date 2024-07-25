@@ -14,10 +14,10 @@ interface SearchResultsProps {
 
 const SearchResults: React.FC<SearchResultsProps> = ({ results }) => {
   return (
-    <Box mt={4} display="flex" justifyContent="center" alignItems="center">
+    <Box mt={4} color = 'white' display="flex" justifyContent="center" alignItems="center">
       <List style={{ width: "600px" }}>
         {results.map((result) => (
-          <ListItem alignItems="flex-start">
+          <ListItem alignItems="flex-start" className = "result">
             <ListItemText
               primary={<Typography variant="h6">{result.title}</Typography>}
               secondary={

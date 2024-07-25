@@ -1,0 +1,9 @@
+.button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 5px;
+  }
+.result {
+    background-color: rgba(211, 211, 211, 0.336);
+}
