@@ -1,0 +1,10 @@
+body {
+  background-color: rgb(200, 200, 200);
+}
+
+@font-face { 
+    font-family: 'MyFont'; 
+    src: url('TimeburnerBold-peGR.ttf') format('truetype'); 
+    font-weight: normal; 
+    font-style: normal; 
+} 
