@@ -22,7 +22,6 @@ going to find on the first couple pages of google search.
 As a direct corollory of the first two, these gems are always **human-generated** and 
 deeply reflect the authors behind them. 
 
-
 With gem-search I hope to introduce a new paradigm of search where we look for content 
 written by real people. 
 `;

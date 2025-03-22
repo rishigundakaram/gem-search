@@ -8,7 +8,7 @@ export interface SearchResult {
 }
 
 export async function searchDocuments(query: string): Promise<SearchResult[]> {
-  const response = await fetch("http://localhost:8000/search", {
+  const response = await fetch("http://localhost:80/search", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
