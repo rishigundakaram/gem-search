@@ -1,9 +1,6 @@
 // src/components/SearchBar.tsx
 
 import React from "react";
-import TextField from "@mui/material/TextField";
-import Button from "@mui/material/Button";
-import Box from "@mui/material/Box";
 
 interface SearchBarProps {
   query: string;
@@ -22,20 +19,41 @@ const SearchBar: React.FC<SearchBarProps> = ({
     }
   };
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleSearch();
+  };
+
   return (
-    <Box display="flex" justifyContent="center" alignItems="center" mt={2}>
-      <TextField
-        variant="outlined"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        onKeyDown={handleKeyDown}
-        label="Search"
-        style={{ marginRight: "10px", width: "300px" }}
-      />
-      <Button variant="contained" color="primary" onClick={handleSearch}>
-        Search
-      </Button>
-    </Box>
+    <div style={{ 
+      textAlign: 'center',
+      marginTop: '20px',
+      marginBottom: '20px'
+    }}>
+      <form onSubmit={handleSubmit}>
+        <input
+          type="text"
+          style={{ 
+            padding: '6px', 
+            width: '450px',
+            border: '1px solid #666',
+            fontSize: '16px'
+          }}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={handleKeyDown}
+        />
+        <input 
+          type="submit" 
+          value="Search" 
+          style={{ 
+            marginLeft: '5px', 
+            padding: '6px 12px',
+            fontSize: '16px'
+          }}
+        />
+      </form>
+    </div>
   );
 };
 export default SearchBar;
