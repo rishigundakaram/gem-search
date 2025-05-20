@@ -14,13 +14,13 @@ Mining the Hidden Gems of the internet
    ```
    python -m venv venv
    source venv/bin/activate
-   pip install fastapi uvicorn newspaper3k sqlalchemy
+   pip install fastapi uvicorn newspaper3k sqlalchemy alembic
    ```
 
-2. Initialize the SQLite database:
+2. Initialize the SQLite database using Alembic migrations:
    ```
    cd search
-   python init_sqlite_db.py
+   alembic upgrade head
    ```
 
 3. Run the backend server:
@@ -50,24 +50,30 @@ Mining the Hidden Gems of the internet
 To add new links to the database:
 
 1. Add URLs to `search/scrapers/links.json`
-2. Run the scraper (choose one of the following options):
+2. Initialize the database with migrations:
+   ```
+   cd search
+   alembic upgrade head
+   ```
 
-   **Simple Scraper (Recommended):**
+3. Run the scraper (choose one of the following options):
+
+   **SQLAlchemy Scraper (Recommended):**
+   ```
+   cd search
+   python scrapers/alembic_scraper.py --links_file scrapers/links.json
+   ```
+   
+   **Simple Scraper:**
    ```
    cd search
    python scrapers/simple_scraper.py --links_file scrapers/links.json --db_path search.db
    ```
-   
-   **Legacy Scraper:**
-   ```
-   cd search
-   python scrapers/util.py scrapers/links.json search.db
-   ```
 
-3. Process any pending links:
+4. Process any pending links:
    ```
    cd search
-   python scrapers/simple_scraper.py --process_pending --db_path search.db
+   python scrapers/alembic_scraper.py --process_pending
    ```
 
 ## SQLite Full-Text Search
