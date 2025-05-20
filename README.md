@@ -58,14 +58,10 @@ To add new links to the database:
 
 ## SQLite Full-Text Search
 
-This project uses SQLite's FTS5 extension for efficient text search. The implementation:
-
-1. Creates a standard table for document metadata
-2. Creates an FTS5 virtual table for content searching
-3. Automatically falls back to standard LIKE queries if FTS5 is not available
+This project uses SQLite's FTS5 extension for efficient text search. FTS5 is required and the application will not run without it.
 
 Key features:
 - Full-text indexing for fast searches
 - Porter stemming for better matching
 - Ranking of search results by relevance
-- Support for advanced query syntax
+- Native SQLite integration

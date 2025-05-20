@@ -18,7 +18,7 @@ def init_db(db_path):
     )
     ''')
     
-    # Create FTS5 virtual table for full-text search if SQLite supports it
+    # Create FTS5 virtual table - fail if not available
     try:
         cursor.execute('''
         CREATE VIRTUAL TABLE IF NOT EXISTS document_content USING fts5(
@@ -28,14 +28,15 @@ def init_db(db_path):
         )
         ''')
         print("FTS5 extension is enabled")
-        has_fts = True
     except sqlite3.Error as e:
-        print(f"FTS5 extension not available: {e}")
-        print("Falling back to standard tables")
-        has_fts = False
+        # Raise error if FTS5 is not available
+        error_msg = f"FTS5 extension is required but not available: {e}"
+        print(error_msg)
+        conn.close()
+        raise RuntimeError(error_msg)
     
     conn.commit()
-    return conn, has_fts
+    return conn
 
 def fetch_and_parse(url):
     try:
@@ -57,7 +58,7 @@ def main(links_file, db_path):
         links = json.load(file)
     
     # Initialize database
-    conn, has_fts = init_db(db_path)
+    conn = init_db(db_path)
     cursor = conn.cursor()
     
     # Get existing URLs from the database
@@ -76,13 +77,12 @@ def main(links_file, db_path):
                     (url, title, full_text)
                 )
                 
-                # If FTS5 is available, also insert into FTS table
-                if has_fts:
-                    document_id = cursor.lastrowid
-                    cursor.execute(
-                        "INSERT INTO document_content (document_id, content) VALUES (?, ?)",
-                        (document_id, full_text)
-                    )
+                # Insert into FTS5 table
+                document_id = cursor.lastrowid
+                cursor.execute(
+                    "INSERT INTO document_content (document_id, content) VALUES (?, ?)",
+                    (document_id, full_text)
+                )
                 
                 new_count += 1
     

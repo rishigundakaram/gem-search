@@ -21,7 +21,7 @@ def init_db():
     )
     ''')
     
-    # Try to create FTS5 virtual table
+    # Create FTS5 virtual table - fail if not available
     try:
         cursor.execute('''
         CREATE VIRTUAL TABLE IF NOT EXISTS document_content USING fts5(
@@ -31,11 +31,12 @@ def init_db():
         )
         ''')
         print("FTS5 extension is enabled")
-        has_fts = True
     except sqlite3.Error as e:
-        print(f"FTS5 extension not available: {e}")
-        print("Falling back to standard tables")
-        has_fts = False
+        # Raise error if FTS5 is not available
+        error_msg = f"FTS5 extension is required but not available: {e}"
+        print(error_msg)
+        conn.close()
+        raise RuntimeError(error_msg)
     
     conn.commit()
     
@@ -56,17 +57,16 @@ def init_db():
             (row['url'], row['title'], row['extracted text'])
         )
         
-        # If FTS5 is available, also insert into FTS table
-        if has_fts:
-            document_id = cursor.lastrowid
-            if not document_id:  # If document already existed
-                cursor.execute("SELECT id FROM documents WHERE url = ?", (row['url'],))
-                document_id = cursor.fetchone()[0]
-                
-            cursor.execute(
-                "INSERT OR REPLACE INTO document_content (document_id, content) VALUES (?, ?)",
-                (document_id, row['extracted text'])
-            )
+        # Insert into FTS5 table
+        document_id = cursor.lastrowid
+        if not document_id:  # If document already existed
+            cursor.execute("SELECT id FROM documents WHERE url = ?", (row['url'],))
+            document_id = cursor.fetchone()[0]
+            
+        cursor.execute(
+            "INSERT OR REPLACE INTO document_content (document_id, content) VALUES (?, ?)",
+            (document_id, row['extracted text'])
+        )
     
     conn.commit()
     print(f"Imported {cursor.rowcount} documents into the SQLite database")

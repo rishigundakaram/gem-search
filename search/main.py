@@ -3,7 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List
 import sqlite3
-from contextvars import ContextVar
 from functools import lru_cache
 
 # Define database path
@@ -53,35 +52,18 @@ async def search(search_query: SearchQuery):
     cursor = conn.cursor()
     
     try:
-        # Check if FTS5 is available and document_content table exists
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='document_content'")
-        has_fts = cursor.fetchone() is not None
-        
-        if has_fts:
-            # Use FTS5 for searching
-            cursor.execute(
-                """
-                SELECT d.title, d.url 
-                FROM document_content AS c
-                JOIN documents AS d ON c.document_id = d.id
-                WHERE document_content MATCH ?
-                ORDER BY rank
-                LIMIT 10
-                """, 
-                (query,)
-            )
-        else:
-            # Fallback to basic LIKE query
-            like_pattern = f"%{query}%"
-            cursor.execute(
-                """
-                SELECT title, url
-                FROM documents
-                WHERE content LIKE ?
-                LIMIT 10
-                """,
-                (like_pattern,)
-            )
+        # Use FTS5 for searching - we assume the table exists
+        cursor.execute(
+            """
+            SELECT d.title, d.url 
+            FROM document_content AS c
+            JOIN documents AS d ON c.document_id = d.id
+            WHERE document_content MATCH ?
+            ORDER BY rank
+            LIMIT 10
+            """, 
+            (query,)
+        )
         
         results = [{"title": row['title'], "url": row['url']} for row in cursor.fetchall()]
         return results
