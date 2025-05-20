@@ -66,24 +66,39 @@ The advanced crawler can discover blog articles from source URLs:
    python -m crawler.crawler --process_pending
    ```
 
-### Running Tests
+### Testing the Crawler
 
-The crawler includes a comprehensive test suite:
+#### Manual Verification
+
+For a quick manual test of the crawler components:
+
+```
+cd gem-search
+python search/tests/test_app.py
+```
+
+This will verify that the key components (link discovery, article classification, content extraction) work with real URLs.
+
+#### Automated Tests
+
+The crawler includes a comprehensive test suite that uses mocks to avoid external dependencies:
 
 1. Install development dependencies:
    ```
    pip install -r requirements-dev.txt
    ```
 
-2. Run the tests:
+2. Run the tests from the project root:
    ```
-   pytest
+   PYTHONPATH=$PYTHONPATH:$(pwd) pytest search/tests/crawler
    ```
 
-3. Run tests with coverage:
+3. Test a specific component:
    ```
-   pytest --cov=search/crawler
+   PYTHONPATH=$PYTHONPATH:$(pwd) pytest search/tests/crawler/test_utils.py
    ```
+
+Note: Setting PYTHONPATH ensures the tests can locate all the necessary modules.
 
 ### Using the Simple Scraper
 
