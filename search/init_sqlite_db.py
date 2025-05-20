@@ -1,78 +1,76 @@
-import sqlite3
-import pandas as pd
-import os
+#!/usr/bin/env python3
+"""
+Initialize the SQLite database using Alembic migrations
+"""
 
-# Paths
-CSV_PATH = 'scrapers/output.csv'
-DB_PATH = 'search.db'
+import os
+import sys
+import subprocess
+import logging
+from sqlalchemy import text
+from db.database import engine, get_db
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger('init_db')
 
 def init_db():
-    # Create database schema
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
+    """Initialize the database using Alembic migrations"""
+    logger.info("Running Alembic migrations...")
     
-    # Create regular documents table
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS documents (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        url TEXT UNIQUE,
-        title TEXT,
-        content TEXT
-    )
-    ''')
+    # Get the current directory (where this script is located)
+    current_dir = os.path.dirname(os.path.abspath(__file__))
     
-    # Create FTS5 virtual table - fail if not available
     try:
-        cursor.execute('''
+        # Run alembic upgrade
+        result = subprocess.run(
+            ["alembic", "upgrade", "head"],
+            cwd=current_dir,  # Set the working directory to where alembic.ini is
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        
+        if result.returncode == 0:
+            logger.info("Database schema successfully initialized")
+        else:
+            error_msg = f"Error running migrations: {result.stderr}"
+            logger.error(error_msg)
+            raise RuntimeError(error_msg)
+    
+    except Exception as e:
+        error_msg = f"Failed to run migrations: {str(e)}"
+        logger.error(error_msg)
+        raise RuntimeError(error_msg)
+    
+    # Explicitly ensure FTS5 virtual table exists
+    # This is handled separately since Alembic doesn't always handle virtual tables well
+    try:
+        # Get a database session
+        session = next(get_db())
+        
+        # Create the FTS5 virtual table if it doesn't exist
+        session.execute(text("""
         CREATE VIRTUAL TABLE IF NOT EXISTS document_content USING fts5(
             content,
             document_id UNINDEXED,
             tokenize='porter unicode61'
         )
-        ''')
-        print("FTS5 extension is enabled")
-    except sqlite3.Error as e:
-        # Raise error if FTS5 is not available
-        error_msg = f"FTS5 extension is required but not available: {e}"
-        print(error_msg)
-        conn.close()
-        raise RuntimeError(error_msg)
-    
-    conn.commit()
-    
-    # Check if CSV file exists
-    if not os.path.exists(CSV_PATH):
-        print(f"CSV file {CSV_PATH} not found!")
-        conn.close()
-        return
-    
-    # Load CSV data
-    df = pd.read_csv(CSV_PATH)
-    
-    # Insert data into SQLite
-    for _, row in df.iterrows():
-        # Insert into documents table
-        cursor.execute(
-            "INSERT OR IGNORE INTO documents (url, title, content) VALUES (?, ?, ?)",
-            (row['url'], row['title'], row['extracted text'])
-        )
+        """))
         
-        # Insert into FTS5 table
-        document_id = cursor.lastrowid
-        if not document_id:  # If document already existed
-            cursor.execute("SELECT id FROM documents WHERE url = ?", (row['url'],))
-            document_id = cursor.fetchone()[0]
-            
-        cursor.execute(
-            "INSERT OR REPLACE INTO document_content (document_id, content) VALUES (?, ?)",
-            (document_id, row['extracted text'])
-        )
+        session.commit()
+        logger.info("FTS5 virtual table is ready")
+    except Exception as e:
+        logger.error(f"Error initializing FTS5 table: {e}")
+        raise
     
-    conn.commit()
-    print(f"Imported {cursor.rowcount} documents into the SQLite database")
-    
-    conn.close()
+    logger.info("Database initialization complete")
+    return True
 
 if __name__ == "__main__":
     init_db()
-    print(f"Database initialized at {DB_PATH}")
+    print("Database successfully initialized using Alembic migrations")
+    print("You can now run the API server with: uvicorn main:app --reload")

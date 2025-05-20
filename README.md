@@ -14,14 +14,16 @@ Mining the Hidden Gems of the internet
    ```
    python -m venv venv
    source venv/bin/activate
-   pip install fastapi uvicorn pandas newspaper3k
+   pip install fastapi uvicorn sqlalchemy alembic newspaper3k pandas
    ```
 
-2. Initialize the SQLite database:
+2. Initialize the SQLite database (uses Alembic migrations):
    ```
    cd search
    python init_sqlite_db.py
    ```
+   
+   This runs Alembic migrations to create the database schema.
 
 3. Run the backend server:
    ```
