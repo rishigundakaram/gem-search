@@ -14,7 +14,7 @@ Mining the Hidden Gems of the internet
    ```
    python -m venv venv
    source venv/bin/activate
-   pip install fastapi uvicorn sqlalchemy alembic newspaper3k pandas beautifulsoup4 requests
+   pip install -r requirements.txt
    ```
 
 2. Initialize the SQLite database (uses Alembic migrations):
@@ -74,10 +74,10 @@ For a quick manual test of the crawler components:
 
 ```
 cd gem-search
-python search/tests/test_app.py
+python test_crawler.py
 ```
 
-This will verify that the key components (link discovery, article classification, content extraction) work with real URLs.
+This will verify that the key components (link discovery, article classification, content extraction) work with real URLs and will automatically check for missing dependencies.
 
 #### Automated Tests
 

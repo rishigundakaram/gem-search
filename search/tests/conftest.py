@@ -10,8 +10,17 @@ from sqlalchemy.pool import StaticPool
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# Now we can import from the search package
 from db.models import Base
-from crawler import utils, discovery, classifier, extractor, db
+
+# Import crawler modules
+try:
+    from crawler import utils, discovery, classifier, extractor, db
+except ImportError as e:
+    print(f"Warning: Could not import crawler modules: {e}")
+    print("Make sure all dependencies are installed with: pip install -r requirements.txt")
+    # Create mock modules for testing
+    utils = discovery = classifier = extractor = db = None
 
 # Setup in-memory SQLite for tests
 @pytest.fixture
