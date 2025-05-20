@@ -1,12 +1,11 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List
-import sqlite3
-from functools import lru_cache
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 
-# Define database path
-DB_PATH = 'search.db'
+from db.database import get_db
 
 # Define request and response models
 class SearchQuery(BaseModel):
@@ -16,19 +15,12 @@ class SearchResult(BaseModel):
     title: str
     url: str
 
-# Create a function that returns a new connection each time
-def get_connection():
-    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-# Get a cached connection
-@lru_cache(maxsize=1)
-def get_db():
-    return get_connection()
-
 # Initialize the FastAPI application
-app = FastAPI()
+app = FastAPI(
+    title="Gem Search API",
+    description="API for searching web content",
+    version="1.0.0"
+)
 
 # Configure CORS
 origins = [
@@ -44,45 +36,31 @@ app.add_middleware(
 )
 
 @app.post("/search", response_model=List[SearchResult])
-async def search(search_query: SearchQuery):
-    # Get a connection for this request
-    conn = get_db()
+async def search(search_query: SearchQuery, db: Session = Depends(get_db)):
+    """Search documents using FTS5."""
     query = search_query.query.strip()
     
-    cursor = conn.cursor()
-    
     try:
-        # Use FTS5 for searching - we assume the table exists
-        cursor.execute(
-            """
-            SELECT d.title, d.url 
+        # Use FTS5 for searching
+        # We need to join to the links table to get URLs
+        result = db.execute(text("""
+            SELECT d.title, l.url 
             FROM document_content AS c
             JOIN documents AS d ON c.document_id = d.id
-            WHERE document_content MATCH ?
+            JOIN links AS l ON d.link_id = l.id
+            WHERE document_content MATCH :query
+            AND l.is_deleted = 0
             ORDER BY rank
             LIMIT 10
-            """, 
-            (query,)
-        )
+        """), {"query": query}).fetchall()
         
-        results = [{"title": row['title'], "url": row['url']} for row in cursor.fetchall()]
+        results = [{"title": row[0], "url": row[1]} for row in result]
         return results
     except Exception as e:
         print(f"Search error: {e}")
-        raise
-    finally:
-        cursor.close()
+        raise HTTPException(status_code=500, detail=f"Search error: {str(e)}")
 
 @app.get("/health")
 async def health_check():
+    """Health check endpoint."""
     return {"status": "ok"}
-
-# Proper application shutdown
-@app.on_event("shutdown")
-def shutdown_event():
-    try:
-        conn = get_db()
-        conn.close()
-        print("Database connection closed")
-    except Exception as e:
-        print(f"Error closing database: {e}")
