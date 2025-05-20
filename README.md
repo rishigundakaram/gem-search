@@ -14,7 +14,7 @@ Mining the Hidden Gems of the internet
    ```
    python -m venv venv
    source venv/bin/activate
-   pip install fastapi uvicorn sqlalchemy alembic newspaper3k pandas
+   pip install fastapi uvicorn sqlalchemy alembic newspaper3k pandas beautifulsoup4 requests
    ```
 
 2. Initialize the SQLite database (uses Alembic migrations):
@@ -49,9 +49,28 @@ Mining the Hidden Gems of the internet
 
 ## Adding New Content
 
-To add new links to the database:
+### Using the Advanced Crawler (Recommended)
 
-1. Add URLs to `search/scrapers/links.json`
+The advanced crawler can discover blog articles from source URLs:
+
+1. Add base URLs to `search/scrapers/links.json` (these are the main blog URLs)
+2. Run the crawler to discover and extract content:
+   ```
+   cd search
+   python -m crawler.crawler --sources_file scrapers/links.json
+   ```
+
+3. Process any pending links:
+   ```
+   cd search
+   python -m crawler.crawler --process_pending
+   ```
+
+### Using the Simple Scraper
+
+For direct article links:
+
+1. Add article URLs to `search/scrapers/links.json`
 2. Run the scraper:
    ```
    cd search
