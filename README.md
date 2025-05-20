@@ -66,6 +66,25 @@ The advanced crawler can discover blog articles from source URLs:
    python -m crawler.crawler --process_pending
    ```
 
+### Running Tests
+
+The crawler includes a comprehensive test suite:
+
+1. Install development dependencies:
+   ```
+   pip install -r requirements-dev.txt
+   ```
+
+2. Run the tests:
+   ```
+   pytest
+   ```
+
+3. Run tests with coverage:
+   ```
+   pytest --cov=search/crawler
+   ```
+
 ### Using the Simple Scraper
 
 For direct article links:
