@@ -8,6 +8,7 @@ def init_db(db_path):
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     
+    # Create regular table for documents
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS documents (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -17,8 +18,24 @@ def init_db(db_path):
     )
     ''')
     
+    # Create FTS5 virtual table for full-text search if SQLite supports it
+    try:
+        cursor.execute('''
+        CREATE VIRTUAL TABLE IF NOT EXISTS document_content USING fts5(
+            content,
+            document_id UNINDEXED,
+            tokenize='porter unicode61'
+        )
+        ''')
+        print("FTS5 extension is enabled")
+        has_fts = True
+    except sqlite3.Error as e:
+        print(f"FTS5 extension not available: {e}")
+        print("Falling back to standard tables")
+        has_fts = False
+    
     conn.commit()
-    return conn
+    return conn, has_fts
 
 def fetch_and_parse(url):
     try:
@@ -40,7 +57,7 @@ def main(links_file, db_path):
         links = json.load(file)
     
     # Initialize database
-    conn = init_db(db_path)
+    conn, has_fts = init_db(db_path)
     cursor = conn.cursor()
     
     # Get existing URLs from the database
@@ -53,10 +70,20 @@ def main(links_file, db_path):
         if url not in existing_urls:
             title, full_text = fetch_and_parse(url)
             if title and full_text:
+                # Insert into documents table
                 cursor.execute(
                     "INSERT INTO documents (url, title, content) VALUES (?, ?, ?)",
                     (url, title, full_text)
                 )
+                
+                # If FTS5 is available, also insert into FTS table
+                if has_fts:
+                    document_id = cursor.lastrowid
+                    cursor.execute(
+                        "INSERT INTO document_content (document_id, content) VALUES (?, ?)",
+                        (document_id, full_text)
+                    )
+                
                 new_count += 1
     
     conn.commit()

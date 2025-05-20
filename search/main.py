@@ -3,13 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List
 import sqlite3
-import pickle
-from rank_bm25 import BM25Okapi
-import nltk
 
 # Define database path
 DB_PATH = 'search.db'
-INDEX_PATH = 'bm25_index.pkl'
 
 # Define request and response models
 class SearchQuery(BaseModel):
@@ -31,15 +27,6 @@ def get_db():
 # Initialize the FastAPI application
 app = FastAPI()
 
-# Load the BM25 index
-with open(INDEX_PATH, 'rb') as f:
-    index_data = pickle.load(f)
-    tokenized_documents = index_data['tokenized_documents']
-    doc_ids = index_data['doc_ids']
-
-# Initialize the BM25 model
-bm25 = BM25Okapi(tokenized_documents)
-
 # Configure CORS
 origins = [
     "http://localhost:3000",
@@ -55,24 +42,40 @@ app.add_middleware(
 
 @app.post("/search", response_model=List[SearchResult])
 async def search(search_query: SearchQuery, conn: sqlite3.Connection = Depends(get_db)):
-    # Tokenize the query
-    tokenized_query = nltk.word_tokenize(search_query.query.lower())
+    query = search_query.query.strip()
     
-    # Get top document indices from BM25
-    top_doc_indices = bm25.get_top_n(tokenized_query, list(range(len(tokenized_documents))), n=10)
-    
-    # Get the corresponding document IDs from our stored mapping
-    top_doc_ids = [doc_ids[idx] for idx in top_doc_indices]
-    
-    # Fetch the actual documents from the database
-    placeholders = ', '.join(['?' for _ in top_doc_ids])
     cursor = conn.cursor()
-    cursor.execute(
-        f"SELECT title, url FROM documents WHERE id IN ({placeholders})",
-        top_doc_ids
-    )
     
-    # Convert to response format
+    # Check if FTS5 is available and document_content table exists
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='document_content'")
+    has_fts = cursor.fetchone() is not None
+    
+    if has_fts:
+        # Use FTS5 for searching
+        cursor.execute(
+            """
+            SELECT d.title, d.url 
+            FROM document_content AS c
+            JOIN documents AS d ON c.document_id = d.id
+            WHERE document_content MATCH ?
+            ORDER BY rank
+            LIMIT 10
+            """, 
+            (query,)
+        )
+    else:
+        # Fallback to basic LIKE query
+        like_pattern = f"%{query}%"
+        cursor.execute(
+            """
+            SELECT title, url
+            FROM documents
+            WHERE content LIKE ?
+            LIMIT 10
+            """,
+            (like_pattern,)
+        )
+    
     results = [{"title": row['title'], "url": row['url']} for row in cursor.fetchall()]
     
     return results
