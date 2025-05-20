@@ -1,27 +1,57 @@
+#!/usr/bin/env python3
+"""
+Initialize the SQLite database with the required schema
+"""
+
 import sqlite3
-import pandas as pd
 import os
+import logging
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger('init_db')
 
 # Paths
-CSV_PATH = 'scrapers/output.csv'
 DB_PATH = 'search.db'
 
 def init_db():
-    # Create database schema
+    """Initialize the SQLite database with required tables"""
+    
+    # Connect to the database
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
-    # Create regular documents table
+    # Create links table
     cursor.execute('''
-    CREATE TABLE IF NOT EXISTS documents (
+    CREATE TABLE IF NOT EXISTS links (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         url TEXT UNIQUE,
-        title TEXT,
-        content TEXT
+        status TEXT DEFAULT 'pending',
+        discovered_at TIMESTAMP,
+        last_processed_at TIMESTAMP NULL,
+        is_deleted BOOLEAN DEFAULT 0
     )
     ''')
     
-    # Create FTS5 virtual table - fail if not available
+    # Create documents table
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS documents (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        link_id INTEGER UNIQUE,
+        title TEXT,
+        content TEXT,
+        processed_at TIMESTAMP,
+        FOREIGN KEY (link_id) REFERENCES links (id)
+    )
+    ''')
+    
+    # Enable foreign keys
+    cursor.execute('PRAGMA foreign_keys = ON')
+    
+    # Create FTS5 virtual table for content search
     try:
         cursor.execute('''
         CREATE VIRTUAL TABLE IF NOT EXISTS document_content USING fts5(
@@ -30,49 +60,22 @@ def init_db():
             tokenize='porter unicode61'
         )
         ''')
-        print("FTS5 extension is enabled")
+        logger.info("FTS5 extension is enabled and virtual table created")
     except sqlite3.Error as e:
         # Raise error if FTS5 is not available
         error_msg = f"FTS5 extension is required but not available: {e}"
-        print(error_msg)
+        logger.error(error_msg)
         conn.close()
         raise RuntimeError(error_msg)
     
     conn.commit()
-    
-    # Check if CSV file exists
-    if not os.path.exists(CSV_PATH):
-        print(f"CSV file {CSV_PATH} not found!")
-        conn.close()
-        return
-    
-    # Load CSV data
-    df = pd.read_csv(CSV_PATH)
-    
-    # Insert data into SQLite
-    for _, row in df.iterrows():
-        # Insert into documents table
-        cursor.execute(
-            "INSERT OR IGNORE INTO documents (url, title, content) VALUES (?, ?, ?)",
-            (row['url'], row['title'], row['extracted text'])
-        )
-        
-        # Insert into FTS5 table
-        document_id = cursor.lastrowid
-        if not document_id:  # If document already existed
-            cursor.execute("SELECT id FROM documents WHERE url = ?", (row['url'],))
-            document_id = cursor.fetchone()[0]
-            
-        cursor.execute(
-            "INSERT OR REPLACE INTO document_content (document_id, content) VALUES (?, ?)",
-            (document_id, row['extracted text'])
-        )
-    
-    conn.commit()
-    print(f"Imported {cursor.rowcount} documents into the SQLite database")
-    
     conn.close()
+    
+    logger.info(f"Database initialized at {DB_PATH}")
+    return True
 
 if __name__ == "__main__":
     init_db()
-    print(f"Database initialized at {DB_PATH}")
+    print(f"Database initialized at: {DB_PATH}")
+    print("You can now add content using the scraper:")
+    print("  python scrapers/simple_scraper.py --links_file scrapers/links.json")

@@ -14,7 +14,7 @@ Mining the Hidden Gems of the internet
    ```
    python -m venv venv
    source venv/bin/activate
-   pip install fastapi uvicorn pandas newspaper3k
+   pip install fastapi uvicorn newspaper3k sqlalchemy
    ```
 
 2. Initialize the SQLite database:
@@ -50,10 +50,24 @@ Mining the Hidden Gems of the internet
 To add new links to the database:
 
 1. Add URLs to `search/scrapers/links.json`
-2. Run the scraper:
+2. Run the scraper (choose one of the following options):
+
+   **Simple Scraper (Recommended):**
+   ```
+   cd search
+   python scrapers/simple_scraper.py --links_file scrapers/links.json --db_path search.db
+   ```
+   
+   **Legacy Scraper:**
    ```
    cd search
    python scrapers/util.py scrapers/links.json search.db
+   ```
+
+3. Process any pending links:
+   ```
+   cd search
+   python scrapers/simple_scraper.py --process_pending --db_path search.db
    ```
 
 ## SQLite Full-Text Search
