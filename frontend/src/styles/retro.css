@@ -1,0 +1,126 @@
+/* Retro styling for gem search - early web era */
+
+/* Base style reset - minimal reset to mimic vintage browsers */
+body {
+  font-family: Verdana, Geneva, sans-serif;
+  font-size: 12px;
+  background-color: #FFFFFF;
+  color: #000000;
+  margin: 8px;
+  padding: 0;
+}
+
+/* Container */
+.retro-container {
+  width: 760px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+/* Headings */
+h1 {
+  font-size: 24px;
+  margin: 8px 0;
+}
+
+h2 {
+  font-size: 18px;
+  margin: 6px 0;
+}
+
+h3 {
+  font-size: 14px;
+  margin: 4px 0;
+}
+
+/* Links - classic colors */
+a:link {
+  color: #0000EE;
+  text-decoration: underline;
+}
+
+a:visited {
+  color: #551A8B;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Form inputs */
+.retro-input {
+  height: 22px;
+  border: 1px solid #7B7B7B;
+  background-color: #FFFFFF;
+  padding: 2px 4px;
+  font-family: Verdana, Geneva, sans-serif;
+  font-size: 12px;
+}
+
+.retro-btn {
+  height: 22px;
+  background-color: #E9E9E9;
+  border: 1px solid #7B7B7B;
+  border-bottom: 1px solid #404040;
+  border-right: 1px solid #404040;
+  font-family: Verdana, Geneva, sans-serif;
+  font-size: 12px;
+  padding: 2px 8px;
+  cursor: pointer;
+  text-align: center;
+}
+
+/* Results styling */
+.results-list {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+}
+
+.results-list li {
+  margin-bottom: 8px;
+  padding-left: 20px;
+  position: relative;
+}
+
+.results-list li:before {
+  content: "•";
+  position: absolute;
+  left: 5px;
+}
+
+.url {
+  color: #008000;
+  font-size: 11px;
+}
+
+/* Spacing utilities */
+.vspace-sm {
+  margin-top: 8px;
+}
+
+.vspace-lg {
+  margin-top: 24px;
+}
+
+/* Footer elements */
+.retro-rule {
+  border: 0;
+  border-top: 1px dotted #CCCCCC;
+  width: 60%;
+}
+
+.nav {
+  font-size: 10px;
+  float: right;
+}
+
+/* Logo */
+.logo-container {
+  margin: 10px auto;
+}
+
+.logo-container img {
+  height: 90px;
+}
