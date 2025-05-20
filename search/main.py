@@ -1,22 +1,12 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List
-import pandas as pd
-import pickle
-from rank_bm25 import BM25Okapi
-import nltk
+import sqlite3
+from functools import lru_cache
 
-# Load the CSV file
-df = pd.read_csv('./scrapers/output.csv')
-
-# Load tokenized documents
-with open('bm25_tokenized_documents.pkl', 'rb') as f:
-    tokenized_documents = pickle.load(f)
-
-# Initialize the BM25 model
-bm25 = BM25Okapi(tokenized_documents)
-
+# Define database path
+DB_PATH = 'search.db'
 
 # Define request and response models
 class SearchQuery(BaseModel):
@@ -25,9 +15,22 @@ class SearchQuery(BaseModel):
 class SearchResult(BaseModel):
     title: str
     url: str
+
+# Create a function that returns a new connection each time
+def get_connection():
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+# Get a cached connection
+@lru_cache(maxsize=1)
+def get_db():
+    return get_connection()
+
 # Initialize the FastAPI application
 app = FastAPI()
 
+# Configure CORS
 origins = [
     "http://localhost:3000",
 ]
@@ -42,11 +45,44 @@ app.add_middleware(
 
 @app.post("/search", response_model=List[SearchResult])
 async def search(search_query: SearchQuery):
-    tokenized_query = nltk.word_tokenize(search_query.query.lower())
-    scores = bm25.get_top_n(tokenized_query, df['extracted text'].tolist(), n=10)
-    results = [
-        {"title": df.loc[df['extracted text'] == result]['title'].values[0],
-         "url": df.loc[df['extracted text'] == result]['url'].values[0]}
-        for result in scores
-    ]
-    return results
+    # Get a connection for this request
+    conn = get_db()
+    query = search_query.query.strip()
+    
+    cursor = conn.cursor()
+    
+    try:
+        # Use FTS5 for searching - we assume the table exists
+        cursor.execute(
+            """
+            SELECT d.title, d.url 
+            FROM document_content AS c
+            JOIN documents AS d ON c.document_id = d.id
+            WHERE document_content MATCH ?
+            ORDER BY rank
+            LIMIT 10
+            """, 
+            (query,)
+        )
+        
+        results = [{"title": row['title'], "url": row['url']} for row in cursor.fetchall()]
+        return results
+    except Exception as e:
+        print(f"Search error: {e}")
+        raise
+    finally:
+        cursor.close()
+
+@app.get("/health")
+async def health_check():
+    return {"status": "ok"}
+
+# Proper application shutdown
+@app.on_event("shutdown")
+def shutdown_event():
+    try:
+        conn = get_db()
+        conn.close()
+        print("Database connection closed")
+    except Exception as e:
+        print(f"Error closing database: {e}")
