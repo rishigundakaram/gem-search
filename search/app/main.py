@@ -5,7 +5,7 @@ from typing import List
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from db.database import get_db
+from app.database import get_db
 
 # Define request and response models
 class SearchQuery(BaseModel):

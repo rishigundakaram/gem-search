@@ -40,15 +40,15 @@ jobs:
     - name: Test database initialization
       working-directory: ./search
       run: |
-        python init_sqlite_db.py
+        python init_db.py
         sqlite3 search.db ".schema" | grep -q "documents"
         echo "Database initialization test passed"
     
     - name: Test scraper with sample data
       working-directory: ./search
       run: |
-        echo '["https://httpbin.org/html"]' > test_links.json
-        timeout 30 python scrapers/util.py test_links.json search.db || true
+        echo '["https://httpbin.org/html"]' > data/test_links.json
+        timeout 30 python app/scraper.py data/test_links.json search.db || true
         echo "Scraper test completed"
 
   test-frontend:
@@ -103,14 +103,14 @@ jobs:
     - name: Initialize database and add test data
       working-directory: ./search
       run: |
-        python init_sqlite_db.py
-        echo '["https://httpbin.org/html"]' > test_links.json
-        timeout 30 python scrapers/util.py test_links.json search.db || true
+        python init_db.py
+        echo '["https://httpbin.org/html"]' > data/test_links.json
+        timeout 30 python app/scraper.py data/test_links.json search.db || true
     
     - name: Start API server
       working-directory: ./search
       run: |
-        uvicorn main:app --host 0.0.0.0 --port 8000 &
+        uvicorn app.main:app --host 0.0.0.0 --port 8000 &
         sleep 5
         echo "API server started"
     

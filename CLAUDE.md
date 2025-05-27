@@ -13,35 +13,39 @@ Gem-search is a web application for "Mining the Hidden Gems of the internet". It
 
 ### Backend (Python)
 
+To install dependencies:
+
+```bash
+cd search
+pip install -r requirements.txt
+```
+
 To initialize the SQLite database:
 
 ```bash
 cd search
-python init_sqlite_db.py
-```
-
-To build the search index:
-
-```bash
-cd search
-python tokenize_docs.py search.db
+python init_db.py
 ```
 
 To run the FastAPI server:
 
 ```bash
 cd search
-# Make sure you have the required dependencies installed:
-pip install fastapi uvicorn pandas nltk rank_bm25 newspaper3k
-# Start the server
-uvicorn main:app --reload
+uvicorn app.main:app --reload
 ```
 
 To scrape new content:
 
 ```bash
 cd search
-python scrapers/util.py scrapers/links.json search.db
+python app/scraper.py data/links.json search.db
+```
+
+To run tests:
+
+```bash
+cd search
+pytest
 ```
 
 ### Frontend (React/TypeScript)
@@ -66,26 +70,47 @@ npm test       # Run tests in interactive watch mode
 
 ### Backend Architecture
 
-1. **Data Collection**:
+The backend follows a clean, modular structure:
 
-   - `scrapers/util.py` fetches and parses content from URLs listed in `links.json`
-   - Extracted content is stored in a SQLite database (`search.db`)
+```
+search/
+├── app/
+│   ├── database.py      # Database connection and initialization
+│   ├── main.py          # FastAPI application and routes
+│   ├── models.py        # SQLAlchemy models
+│   └── scraper.py       # Content scraping functionality
+├── tests/
+│   ├── test_api.py      # API endpoint tests
+│   └── test_scraper.py  # Scraper functionality tests
+├── data/
+│   └── links.json       # URLs to scrape
+└── init_db.py          # Database initialization script
+```
+
+1. **Data Collection**:
+   - `app/scraper.py` fetches and parses content from URLs listed in `data/links.json`
+   - Uses newspaper3k for content extraction
+   - Stores content in SQLite database with FTS5 for full-text search
 
 2. **Search Engine**:
-
-   - `tokenize_docs.py` processes the content from the SQLite database and creates a BM25 index
-   - `main.py` exposes a FastAPI endpoint `/search` that accepts POST requests with search queries
-   - The endpoint uses the BM25 index to find relevant documents and returns them
+   - `app/main.py` exposes FastAPI endpoints
+   - `/search` endpoint uses SQLite FTS5 for fast full-text search
+   - `/health` endpoint for status checks
 
 3. **Database Schema**:
-   The SQLite database has a single table `documents` with the following schema:
-   ```
+   ```sql
    CREATE TABLE documents (
        id INTEGER PRIMARY KEY AUTOINCREMENT,
        url TEXT UNIQUE,
        title TEXT,
        content TEXT
-   )
+   );
+   
+   CREATE VIRTUAL TABLE document_content USING fts5(
+       content,
+       document_id UNINDEXED,
+       tokenize='porter unicode61'
+   );
    ```
 
 ### Frontend Architecture
@@ -107,13 +132,13 @@ npm test       # Run tests in interactive watch mode
 
 ## Development Workflow
 
-1. Initialize the database (if not already done): `python init_sqlite_db.py`
-2. Build the search index: `python tokenize_docs.py search.db`
-3. Start the backend server: `uvicorn main:app --reload`
-4. Start the frontend development server: `npm start`
-5. Make changes to code
-6. For backend changes, the server will automatically reload
-7. For frontend changes, the page will automatically reload
+1. Install dependencies: `pip install -r requirements.txt`
+2. Initialize the database: `python init_db.py`
+3. Scrape content: `python app/scraper.py data/links.json search.db`
+4. Run tests: `pytest`
+5. Start the backend server: `uvicorn app.main:app --reload`
+6. Start the frontend development server: `npm start`
+7. Make changes to code - servers will automatically reload
 
 ## Development notes
 

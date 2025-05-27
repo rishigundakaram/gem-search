@@ -7,9 +7,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from unittest.mock import patch
 
-from main import app
-from db.database import get_db
-from db.models import Base
+from app.main import app
+from app.database import get_db
+from app.models import Base
 
 
 class TestAPI:
