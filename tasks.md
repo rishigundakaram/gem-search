@@ -1,0 +1,4 @@
+- [ ] authorization between frontend and backend
+- [ ] make frontend look like early 2000s website
+- [ ] have backend using sqlite FTS
+- [ ] update crawler to enable 

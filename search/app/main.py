@@ -5,7 +5,7 @@ from typing import List
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from db.database import get_db
+from app.database import get_db
 
 # Define request and response models
 class SearchQuery(BaseModel):
@@ -40,16 +40,17 @@ async def search(search_query: SearchQuery, db: Session = Depends(get_db)):
     """Search documents using FTS5."""
     query = search_query.query.strip()
     
+    # Return empty results for empty queries
+    if not query:
+        return []
+    
     try:
-        # Use FTS5 for searching
-        # We need to join to the links table to get URLs
+        # Use FTS5 for searching with simple schema
         result = db.execute(text("""
-            SELECT d.title, l.url 
+            SELECT d.title, d.url 
             FROM document_content AS c
             JOIN documents AS d ON c.document_id = d.id
-            JOIN links AS l ON d.link_id = l.id
             WHERE document_content MATCH :query
-            AND l.is_deleted = 0
             ORDER BY rank
             LIMIT 10
         """), {"query": query}).fetchall()
