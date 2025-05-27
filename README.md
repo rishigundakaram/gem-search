@@ -1,88 +1,188 @@
-# gem-search
-Mining the Hidden Gems of the internet
+# Gem Search 💎
 
-## Project Structure
+**Mining the Hidden Gems of the internet**
 
-- `/frontend`: React TypeScript frontend
-- `/search`: FastAPI backend with SQLite Full-Text Search
+An intelligent content discovery and search engine that automatically crawls and indexes web content, making it searchable through a clean React interface.
 
-## Getting Started
+## 🚀 Features
 
-### Backend
+- **Automated Link Discovery**: Start with seed URLs and automatically discover linked content
+- **Intelligent Content Extraction**: Uses newspaper3k for robust article and content parsing  
+- **Full-Text Search**: SQLite FTS5 for fast, relevant search results
+- **Duplicate Prevention**: Robust URL deduplication with database constraints
+- **Configurable Crawling**: Control depth and domain scope
+- **Modern UI**: Clean React/TypeScript frontend with real-time search
 
-1. Install dependencies:
-   ```
-   python -m venv venv
-   source venv/bin/activate
-   pip install fastapi uvicorn sqlalchemy alembic newspaper3k pandas beautifulsoup4 requests
-   ```
+## 🏗️ Architecture
 
-2. Initialize the SQLite database (uses Alembic migrations):
-   ```
+### Backend (Python/FastAPI)
+```
+search/
+├── app/
+│   ├── main.py          # FastAPI routes and search endpoints
+│   ├── scraper.py       # Content discovery and extraction
+│   ├── database.py      # SQLite setup and FTS5 configuration
+│   └── models.py        # Data models
+├── data/
+│   └── links.json       # Starter URLs for discovery
+└── init_db.py          # Database initialization
+```
+
+### Frontend (React/TypeScript)
+```
+frontend/
+├── src/
+│   ├── components/      # Search UI components
+│   ├── api/            # Backend API integration
+│   └── containers/     # Main app containers
+└── public/             # Static assets
+```
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Python 3.11+
+- Node.js 18+
+- SQLite with FTS5 extension (usually included)
+
+### Backend Setup
+
+1. **Install dependencies:**
+   ```bash
    cd search
-   python init_sqlite_db.py
+   pip install fastapi uvicorn requests newspaper3k beautifulsoup4 sqlalchemy
    ```
+
+2. **Initialize database:**
+   ```bash
+   python init_db.py
+   ```
+
+3. **Add starter URLs to discover content:**
+   ```bash
+   # Edit data/links.json with your starter URLs
+   echo '["https://danluu.com", "https://research.google.com/blog"]' > data/links.json
+   ```
+
+4. **Run content discovery:**
+   ```bash
+   # Discover and index content (1 level deep)
+   python app/scraper.py data/links.json search.db --discover-depth 1
    
-   This runs Alembic migrations to create the database schema.
-
-3. Run the backend server:
+   # For deeper crawling (more content, takes longer)
+   python app/scraper.py data/links.json search.db --discover-depth 3
+   
+   # Allow cross-domain discovery
+   python app/scraper.py data/links.json search.db --allow-cross-domain
    ```
-   cd search
-   uvicorn main:app --reload
+
+5. **Start the API server:**
+   ```bash
+   uvicorn app.main:app --reload
    ```
 
-### Frontend
+### Frontend Setup
 
-1. Install dependencies:
-   ```
+1. **Install and run:**
+   ```bash
    cd frontend
    npm install
-   ```
-
-2. Run the frontend:
-   ```
-   cd frontend
    npm start
    ```
 
-3. Open browser at [http://localhost:3000](http://localhost:3000)
+2. **Open browser:** [http://localhost:3000](http://localhost:3000)
 
-## Adding New Content
+## 🔍 Content Discovery
 
-### Using the Advanced Crawler (Recommended)
+### Automated Discovery (Recommended)
+The scraper automatically discovers content from starter URLs:
 
-The advanced crawler can discover blog articles from source URLs:
+- **Starter URLs** → **Discover linked pages** → **Extract content** → **Store in database**
+- Configurable crawl depth (1-3 levels recommended)
+- Domain filtering (same-domain or cross-domain)
+- Automatic duplicate prevention
 
-1. Add base URLs to `search/scrapers/links.json` (these are the main blog URLs)
-2. Run the crawler to discover and extract content:
-   ```
-   cd search
-   python -m crawler.crawler --sources_file scrapers/links.json
-   ```
+### Manual URLs
+For specific articles, add direct URLs to `data/links.json` and run with `--discover-depth 0`.
 
-3. Process any pending links:
-   ```
-   cd search
-   python -m crawler.crawler --process_pending
-   ```
+### Command Options
+```bash
+# Basic discovery (1 level deep, same domain only)
+python app/scraper.py data/links.json search.db
 
-### Using the Simple Scraper
+# Deep discovery (3 levels, finds more content)
+python app/scraper.py data/links.json search.db --discover-depth 3
 
-For direct article links:
+# Cross-domain discovery (finds content on different sites)
+python app/scraper.py data/links.json search.db --allow-cross-domain
 
-1. Add article URLs to `search/scrapers/links.json`
-2. Run the scraper:
-   ```
-   cd search
-   python scrapers/util.py scrapers/links.json search.db
-   ```
+# Manual mode (only process exact URLs in JSON)
+python app/scraper.py data/links.json search.db --discover-depth 0
+```
 
-## SQLite Full-Text Search
+## 🔧 Development
 
-This project uses SQLite's FTS5 extension for efficient text search. FTS5 is required and the application will not run without it.
+### API Endpoints
+- `GET /health` - Health check
+- `POST /search` - Search content with JSON payload: `{"query": "search terms"}`
 
-Key features:
-- Full-text indexing for fast searches
-- Porter stemming for better matching
-- Ranking of search results by relevance
-- Native SQLite integration
+### Database Schema
+```sql
+-- Documents table
+CREATE TABLE documents (
+    id INTEGER PRIMARY KEY,
+    url TEXT UNIQUE,
+    title TEXT,
+    content TEXT
+);
+
+-- Full-text search index
+CREATE VIRTUAL TABLE document_content USING fts5(
+    content,
+    document_id UNINDEXED,
+    tokenize='porter unicode61'
+);
+```
+
+### Adding New Features
+1. Backend changes: Modify files in `search/app/`
+2. Frontend changes: Modify files in `frontend/src/`
+3. Database changes: Update `search/app/database.py`
+
+## 📊 Examples
+
+### Sample Starter URLs
+```json
+[
+  "https://danluu.com",
+  "https://research.google.com/blog", 
+  "https://engineering.fb.com",
+  "https://netflixtechblog.com"
+]
+```
+
+### Sample Search Results
+After running discovery, you can search for:
+- "machine learning algorithms"
+- "distributed systems"
+- "performance optimization"
+- "software engineering best practices"
+
+## 🛠️ Technical Stack
+
+- **Backend**: FastAPI, SQLite FTS5, newspaper3k, BeautifulSoup
+- **Frontend**: React, TypeScript, Create React App
+- **Search**: SQLite Full-Text Search with Porter stemming
+- **Content Extraction**: newspaper3k with fallback parsing
+- **Deployment**: Vercel (frontend), self-hosted (backend)
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/your-feature`
+3. Make changes and test locally
+4. Submit a pull request
+
+## 📝 License
+
+MIT License - see LICENSE file for details.
