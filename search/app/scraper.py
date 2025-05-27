@@ -1,9 +1,12 @@
 """
 Content scraper module for Gem Search.
-Handles fetching and parsing web content using newspaper3k.
+Handles fetching, link discovery, and parsing web content.
 """
 import json
 import sqlite3
+import requests
+from urllib.parse import urljoin, urlparse
+from bs4 import BeautifulSoup
 from newspaper import Article
 
 
@@ -31,66 +34,227 @@ def fetch_and_parse(url):
         return None, None
 
 
-def scrape_links_to_database(links_file, db_path):
+def discover_links(url, same_domain_only=True):
     """
-    Scrape links from JSON file and store in database.
+    Discover all links from a given URL.
     
     Args:
-        links_file: Path to JSON file containing URLs
+        url: The URL to discover links from
+        same_domain_only: Whether to only return links from the same domain
+        
+    Returns:
+        set: Set of discovered URLs
+    """
+    discovered_urls = set()
+    
+    try:
+        print(f"Discovering links from: {url}")
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        
+        soup = BeautifulSoup(response.content, 'html.parser')
+        base_domain = urlparse(url).netloc
+        
+        # Find all links
+        for link in soup.find_all('a', href=True):
+            href = link['href']
+            
+            # Convert relative URLs to absolute
+            absolute_url = urljoin(url, href)
+            
+            # Basic URL validation
+            parsed = urlparse(absolute_url)
+            if not parsed.scheme or parsed.scheme not in ['http', 'https']:
+                continue
+                
+            # Domain filtering
+            if same_domain_only and parsed.netloc != base_domain:
+                continue
+                
+            # Skip common non-content URLs
+            if any(skip in absolute_url.lower() for skip in ['#', 'javascript:', 'mailto:', '.pdf', '.jpg', '.png', '.gif']):
+                continue
+                
+            discovered_urls.add(absolute_url)
+            
+        print(f"Discovered {len(discovered_urls)} links from {url}")
+        return discovered_urls
+        
+    except Exception as e:
+        print(f"Failed to discover links from {url}. Error: {e}")
+        return set()
+
+
+def get_existing_urls(db_path):
+    """
+    Get all existing URLs from the database to avoid duplicates.
+    
+    Args:
         db_path: Path to SQLite database
         
     Returns:
-        int: Number of new documents added
+        set: Set of existing URLs
     """
-    # Read links from JSON file
-    with open(links_file, 'r') as file:
-        links = json.load(file)
-    
-    # Connect to database
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    
-    # Get existing URLs from the database
     cursor.execute("SELECT url FROM documents")
     existing_urls = {row[0] for row in cursor.fetchall()}
-    
-    # Process new links
-    new_count = 0
-    for url in links:
-        if url not in existing_urls:
-            title, content = fetch_and_parse(url)
-            if title and content:
-                # Insert into documents table
-                cursor.execute(
-                    "INSERT INTO documents (url, title, content) VALUES (?, ?, ?)",
-                    (url, title, content)
-                )
-                
-                # Insert into FTS5 table
-                document_id = cursor.lastrowid
-                cursor.execute(
-                    "INSERT INTO document_content (document_id, content) VALUES (?, ?)",
-                    (document_id, content)
-                )
-                
-                new_count += 1
-    
-    conn.commit()
     conn.close()
+    return existing_urls
+
+
+def insert_document_if_new(url, title, content, db_path, existing_urls):
+    """
+    Insert document into database if URL doesn't already exist.
     
-    if new_count > 0:
-        print(f"Added {new_count} new documents to {db_path}")
-    else:
-        print("No new documents to add.")
+    Args:
+        url: Document URL
+        title: Document title
+        content: Document content
+        db_path: Path to SQLite database
+        existing_urls: Set of existing URLs to check against
+        
+    Returns:
+        bool: True if document was inserted, False if duplicate
+    """
+    if url in existing_urls:
+        return False
+        
+    if not title or not content:
+        return False
+        
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        # Insert into documents table
+        cursor.execute(
+            "INSERT OR IGNORE INTO documents (url, title, content) VALUES (?, ?, ?)",
+            (url, title, content)
+        )
+        
+        # Check if the insert was successful (not a duplicate)
+        if cursor.rowcount == 0:
+            conn.close()
+            return False
+            
+        # Insert into FTS5 table
+        document_id = cursor.lastrowid
+        cursor.execute(
+            "INSERT INTO document_content (document_id, content) VALUES (?, ?)",
+            (document_id, content)
+        )
+        
+        conn.commit()
+        conn.close()
+        
+        # Add to our existing_urls set to prevent duplicates in this session
+        existing_urls.add(url)
+        return True
+        
+    except sqlite3.IntegrityError:
+        # URL already exists (shouldn't happen with our checks, but safety net)
+        return False
+    except Exception as e:
+        print(f"Database error for {url}: {e}")
+        return False
+
+
+def scrape_with_discovery(links_file, db_path, discover_depth=1, same_domain_only=True):
+    """
+    Scrape starter links and discovered links, storing all in database.
     
-    return new_count
+    Args:
+        links_file: Path to JSON file containing starter URLs
+        db_path: Path to SQLite database
+        discover_depth: How many levels deep to discover links (1 = starter + linked pages)
+        same_domain_only: Whether to only discover links from the same domain
+        
+    Returns:
+        dict: Statistics about the scraping process
+    """
+    # Read starter links from JSON file
+    with open(links_file, 'r') as file:
+        starter_links = json.load(file)
+    
+    print(f"Starting with {len(starter_links)} starter URLs")
+    
+    # Get existing URLs to avoid duplicates
+    existing_urls = get_existing_urls(db_path)
+    print(f"Found {len(existing_urls)} existing URLs in database")
+    
+    # Track all URLs to process
+    all_urls_to_process = set(starter_links)
+    processed_urls = set()
+    stats = {
+        'starter_urls': len(starter_links),
+        'discovered_urls': 0,
+        'processed_successfully': 0,
+        'failed_processing': 0,
+        'skipped_duplicates': 0
+    }
+    
+    # Discover links from starter URLs
+    if discover_depth > 0:
+        print(f"Discovering links from starter URLs (depth: {discover_depth})...")
+        
+        for starter_url in starter_links:
+            if starter_url not in processed_urls:
+                discovered = discover_links(starter_url, same_domain_only)
+                all_urls_to_process.update(discovered)
+                processed_urls.add(starter_url)
+                stats['discovered_urls'] += len(discovered)
+    
+    print(f"Total URLs to process: {len(all_urls_to_process)}")
+    print(f"Discovered {stats['discovered_urls']} new URLs")
+    
+    # Process all URLs (starter + discovered)
+    for url in all_urls_to_process:
+        if url in existing_urls:
+            stats['skipped_duplicates'] += 1
+            continue
+            
+        print(f"Processing: {url}")
+        title, content = fetch_and_parse(url)
+        
+        if insert_document_if_new(url, title, content, db_path, existing_urls):
+            stats['processed_successfully'] += 1
+            print(f"✓ Added: {title[:50]}...")
+        else:
+            stats['failed_processing'] += 1
+            print(f"✗ Failed or duplicate: {url}")
+    
+    # Print summary
+    print("\n" + "="*50)
+    print("SCRAPING SUMMARY")
+    print("="*50)
+    print(f"Starter URLs: {stats['starter_urls']}")
+    print(f"Discovered URLs: {stats['discovered_urls']}")
+    print(f"Successfully processed: {stats['processed_successfully']}")
+    print(f"Failed processing: {stats['failed_processing']}")
+    print(f"Skipped duplicates: {stats['skipped_duplicates']}")
+    print(f"Total new documents: {stats['processed_successfully']}")
+    
+    return stats
+
+
+def scrape_links_to_database(links_file, db_path):
+    """
+    Legacy function - calls new scrape_with_discovery function.
+    Kept for backward compatibility.
+    """
+    result = scrape_with_discovery(links_file, db_path, discover_depth=0)
+    return result['processed_successfully']
 
 
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser(description='Scrape links and store in database.')
-    parser.add_argument('links_file', type=str, help='The JSON file containing the links.')
+    parser = argparse.ArgumentParser(description='Scrape links with discovery and store in database.')
+    parser.add_argument('links_file', type=str, help='The JSON file containing the starter links.')
     parser.add_argument('db_path', type=str, help='The SQLite database file path.')
+    parser.add_argument('--discover-depth', type=int, default=1, help='How many levels deep to discover links (default: 1)')
+    parser.add_argument('--allow-cross-domain', action='store_true', help='Allow discovering links from different domains')
     args = parser.parse_args()
     
-    scrape_links_to_database(args.links_file, args.db_path)
+    same_domain_only = not args.allow_cross_domain
+    scrape_with_discovery(args.links_file, args.db_path, args.discover_depth, same_domain_only)
