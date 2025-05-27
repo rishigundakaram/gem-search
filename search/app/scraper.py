@@ -3,6 +3,7 @@ Content scraper module for Gem Search.
 Handles fetching, link discovery, and parsing web content.
 """
 import json
+import os
 import sqlite3
 import requests
 from urllib.parse import urljoin, urlparse
@@ -173,15 +174,24 @@ def scrape_with_discovery(links_file, db_path, discover_depth=1, same_domain_onl
     Returns:
         dict: Statistics about the scraping process
     """
+    from app.database import init_database
+    
     # Read starter links from JSON file
     with open(links_file, 'r') as file:
         starter_links = json.load(file)
     
     print(f"Starting with {len(starter_links)} starter URLs")
     
-    # Get existing URLs to avoid duplicates
-    existing_urls = get_existing_urls(db_path)
-    print(f"Found {len(existing_urls)} existing URLs in database")
+    # Initialize database if it doesn't exist or doesn't have tables
+    try:
+        existing_urls = get_existing_urls(db_path)
+        print(f"Found {len(existing_urls)} existing URLs in database")
+    except (sqlite3.OperationalError, FileNotFoundError):
+        print("Initializing database...")
+        conn = init_database(db_path)
+        conn.close()
+        existing_urls = set()
+        print("Database initialized with 0 existing URLs")
     
     # Track all URLs to process
     all_urls_to_process = set(starter_links)
