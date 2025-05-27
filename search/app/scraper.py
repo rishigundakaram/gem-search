@@ -174,7 +174,13 @@ def scrape_with_discovery(links_file, db_path, discover_depth=1, same_domain_onl
     Returns:
         dict: Statistics about the scraping process
     """
-    from app.database import init_database
+    try:
+        from app.database import init_database
+    except ImportError:
+        # Handle running as script
+        import sys
+        sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        from app.database import init_database
     
     # Read starter links from JSON file
     with open(links_file, 'r') as file:
