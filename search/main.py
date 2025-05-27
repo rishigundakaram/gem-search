@@ -40,6 +40,10 @@ async def search(search_query: SearchQuery, db: Session = Depends(get_db)):
     """Search documents using FTS5."""
     query = search_query.query.strip()
     
+    # Return empty results for empty queries
+    if not query:
+        return []
+    
     try:
         # Use FTS5 for searching with simple schema
         result = db.execute(text("""
