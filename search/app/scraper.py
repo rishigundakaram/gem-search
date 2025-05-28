@@ -5,6 +5,7 @@ Handles fetching and parsing web content using newspaper3k with automated link d
 import json
 import sqlite3
 import requests
+import trafilatura
 from newspaper import Article
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
@@ -12,7 +13,7 @@ from urllib.parse import urljoin, urlparse
 
 def fetch_and_parse(url):
     """
-    Fetch and parse content from a URL using multiple extraction methods.
+    Fetch and parse content from a URL using Trafilatura for superior text extraction.
     
     Args:
         url: The URL to fetch and parse
@@ -20,70 +21,71 @@ def fetch_and_parse(url):
     Returns:
         tuple: (title, content) or (None, None) if failed
     """
-    # First try newspaper3k for structured articles
     try:
-        article = Article(url)
-        article.download()
-        article.parse()
+        # First, download the content
+        downloaded = trafilatura.fetch_url(url)
+        if not downloaded:
+            return None, None
         
-        if article.title and article.text and len(article.text.strip()) > 50:
-            return article.title, article.text
-    except Exception:
-        pass  # Fall back to manual extraction
-    
-    # Fallback: manual extraction for raw text files and simple pages
-    try:
-        response = requests.get(url, timeout=10)
-        response.raise_for_status()
+        # Extract main text content with metadata
+        content = trafilatura.extract(downloaded, include_comments=False, include_tables=True)
+        if not content or len(content.strip()) < 50:
+            return None, None
         
-        content_type = response.headers.get('content-type', '').lower()
+        # Extract title metadata
+        metadata = trafilatura.extract_metadata(downloaded)
+        title = None
+        if metadata:
+            title = metadata.title or metadata.sitename
         
-        # Handle plain text files directly
-        if 'text/plain' in content_type:
-            content = response.text.strip()
-            if len(content) > 50:  # Only process if substantial content
-                # Use filename as title for text files
-                filename = url.split('/')[-1]
-                title = filename if filename else f"Text from {urlparse(url).netloc}"
-                return title, content
+        # Fallback title extraction if metadata doesn't provide one
+        if not title:
+            # Try to extract title from HTML using BeautifulSoup
+            try:
+                from bs4 import BeautifulSoup
+                soup = BeautifulSoup(downloaded, 'html.parser')
+                title_elem = soup.find('title')
+                if title_elem:
+                    title = title_elem.get_text().strip()
+            except:
+                pass
         
-        # Handle HTML with BeautifulSoup fallback
-        elif 'text/html' in content_type or not content_type:
-            soup = BeautifulSoup(response.content, 'html.parser')
-            
-            # Remove script and style elements
-            for script in soup(["script", "style", "nav", "footer", "header"]):
-                script.decompose()
-            
-            # Try to get title
-            title_elem = soup.find('title')
-            title = title_elem.get_text().strip() if title_elem else f"Page from {urlparse(url).netloc}"
-            
-            # Get main content - try common content containers first
-            content = None
-            for selector in ['main', 'article', '.content', '#content', '.post', '.entry']:
-                content_elem = soup.select_one(selector)
-                if content_elem:
-                    content = content_elem.get_text(separator=' ', strip=True)
-                    break
-            
-            # If no specific content container, get body text
-            if not content or len(content) < 50:
-                body = soup.find('body')
-                if body:
-                    content = body.get_text(separator=' ', strip=True)
-            
-            # Clean up content
-            if content:
-                # Remove excessive whitespace
-                import re
-                content = re.sub(r'\s+', ' ', content).strip()
-                
-                if len(content) > 50:
-                    return title, content
+        # Final fallback for title
+        if not title:
+            title = f"Content from {urlparse(url).netloc}"
+        
+        return title, content.strip()
         
     except Exception as e:
-        print(f"Failed to process {url}. Error: {e}")
+        print(f"Trafilatura extraction failed for {url}: {e}")
+        
+        # Fallback to newspaper3k for structured articles
+        try:
+            article = Article(url)
+            article.download()
+            article.parse()
+            
+            if article.title and article.text and len(article.text.strip()) > 50:
+                return article.title, article.text
+        except Exception:
+            pass
+        
+        # Final fallback: handle plain text files
+        try:
+            response = requests.get(url, timeout=10)
+            response.raise_for_status()
+            
+            content_type = response.headers.get('content-type', '').lower()
+            
+            if 'text/plain' in content_type:
+                content = response.text.strip()
+                if len(content) > 50:
+                    filename = url.split('/')[-1]
+                    title = filename if filename else f"Text from {urlparse(url).netloc}"
+                    return title, content
+                    
+        except Exception as fallback_error:
+            print(f"All extraction methods failed for {url}: {fallback_error}")
     
     return None, None
 
