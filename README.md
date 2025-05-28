@@ -10,8 +10,9 @@ A modern full-stack web application for discovering and searching web content us
 - **Backend**: FastAPI with SQLite FTS5 full-text search
 - **Text Extraction**: Trafilatura + newspaper3k fallback chain
 - **Database**: SQLite with FTS5 extension for fast search
-- **Migrations**: yoyo-migrations for schema management
-- **CI/CD**: GitHub Actions with comprehensive testing
+- **Migrations**: yoyo-migrations with raw SQL for schema management
+- **Testing**: pytest, Ruff, Black with comprehensive CI/CD
+- **Dependencies**: Poetry for Python, npm for Node.js
 
 ## ⚡ Quick Start
 
@@ -28,11 +29,11 @@ A modern full-stack web application for discovering and searching web content us
 # 1. Install backend dependencies
 poetry install
 
-# 2. Initialize database
+# 2. Initialize database (creates tables and FTS5 setup)
 cd backend
 poetry run python init_db.py
 
-# 3. Run database migrations
+# 3. Run database migrations (yoyo-migrations)
 yoyo apply
 
 # 4. Install frontend dependencies  
@@ -124,7 +125,11 @@ poetry run black backend/ tests/
 
 ## 🗄️ Database Management
 
-### Migrations
+### Database Migrations with yoyo-migrations
+
+The project uses **yoyo-migrations** for managing database schema changes with raw SQL migrations.
+
+#### Basic Migration Commands
 
 ```bash
 cd backend
@@ -137,7 +142,54 @@ yoyo rollback
 
 # List migration status
 yoyo list
+
+# Show migration history
+yoyo show-applied
 ```
+
+#### Creating New Migrations
+
+1. **Create migration files** in `backend/migrations/` with format: `NNN_description.sql`
+2. **Add SQL commands** for the migration
+3. **Create rollback file**: `NNN_description_rollback.sql` 
+4. **Apply with**: `yoyo apply`
+
+#### Migration Naming Convention
+
+```
+backend/migrations/
+├── 001_initial_schema.sql              # Creates documents and FTS5 tables
+├── 001_initial_schema_rollback.sql     # Rollback for initial schema
+├── 002_add_embeddings.sql              # Future: Add vector embeddings
+└── 002_add_embeddings_rollback.sql     # Rollback for embeddings
+```
+
+#### Example Migration
+
+**002_add_timestamps.sql:**
+```sql
+-- Add timestamps to documents table
+ALTER TABLE documents ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE documents ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP;
+
+-- step: 002_add_timestamps
+```
+
+**002_add_timestamps_rollback.sql:**
+```sql
+-- Remove timestamp columns
+ALTER TABLE documents DROP COLUMN created_at;
+ALTER TABLE documents DROP COLUMN updated_at;
+
+-- step: 002_add_timestamps_rollback
+```
+
+#### Migration Configuration
+
+See `backend/yoyo.ini` for configuration:
+- Database path: `sqlite:///search.db`
+- Migration directory: `migrations/`
+- Batch mode and verbosity settings
 
 ### Adding Content
 
@@ -218,9 +270,12 @@ gem-search/
 │   │   ├── models.py          # SQLAlchemy models
 │   │   ├── scraper.py         # Trafilatura web scraping
 │   │   └── reddit_scraper.py  # Reddit content discovery
-│   ├── migrations/            # Database migrations
+│   ├── migrations/            # yoyo-migrations SQL files
+│   │   ├── 001_initial_schema.sql
+│   │   └── 001_initial_schema_rollback.sql
 │   ├── tests/                 # Backend unit tests
 │   ├── data/                  # Seed data and links
+│   ├── yoyo.ini              # Migration configuration
 │   └── init_db.py            # Database initialization
 ├── frontend/                  # React TypeScript frontend
 │   ├── src/
@@ -257,4 +312,4 @@ gem-search/
 
 ---
 
-**Built with modern tools**: Poetry, Ruff, Black, pytest, FastAPI, React, TypeScript, and SQLite FTS5.
+**Built with modern tools**: Poetry, Ruff, Black, pytest, FastAPI, React, TypeScript, SQLite FTS5, and yoyo-migrations.
