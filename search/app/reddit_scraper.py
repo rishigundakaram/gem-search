@@ -8,11 +8,11 @@ import re
 import time
 import requests
 from urllib.parse import urlparse
-# Handle imports for both standalone and module usage
-try:
-    from .scraper import scrape_with_discovery, get_existing_urls
-except ImportError:
-    from scraper import scrape_with_discovery, get_existing_urls
+# Import from the same directory
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from scraper import scrape_with_discovery, get_existing_urls
 
 
 def get_reddit_posts(subreddit="InternetIsBeautiful", limit=25, sort="hot", after=None):
