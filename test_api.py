@@ -48,6 +48,7 @@ def test_api_endpoints():
         response = requests.post(
             f"{base_url}/search", 
             json={"query": ""}, 
+            headers={"X-API-Key": "gem-search-dev-key-12345"},
             timeout=5
         )
         if response.status_code == 200:
@@ -61,6 +62,7 @@ def test_api_endpoints():
         response = requests.post(
             f"{base_url}/search", 
             json={"query": "test"}, 
+            headers={"X-API-Key": "gem-search-dev-key-12345"},
             timeout=5
         )
         if response.status_code == 200:
@@ -68,6 +70,20 @@ def test_api_endpoints():
             print(f"✓ Search endpoint working (found {len(results)} results)")
         else:
             print(f"✗ Search endpoint failed: {response.status_code}")
+            return False
+        
+        # Test authentication failure
+        print("Testing authentication failure...")
+        response = requests.post(
+            f"{base_url}/search", 
+            json={"query": "test"}, 
+            headers={"X-API-Key": "invalid-key"},
+            timeout=5
+        )
+        if response.status_code == 401:
+            print("✓ Authentication rejection working")
+        else:
+            print(f"✗ Authentication should fail but got: {response.status_code}")
             return False
         
         return True
