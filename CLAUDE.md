@@ -28,6 +28,15 @@ cd backend
 poetry run python init_db.py
 ```
 
+To run database migrations:
+
+```bash
+cd backend
+yoyo apply               # Apply pending migrations
+yoyo rollback            # Rollback last migration
+yoyo list                # List migration status
+```
+
 To run the FastAPI server:
 
 ```bash
@@ -105,11 +114,14 @@ backend/
 │   ├── main.py          # FastAPI application and routes
 │   ├── models.py        # SQLAlchemy models
 │   └── scraper.py       # Content scraping functionality with Trafilatura
+├── migrations/          # Database migrations (yoyo-migrations)
+│   └── *.sql           # SQL migration files
 ├── tests/
 │   ├── test_scraper.py  # Comprehensive scraper tests
 │   └── __init__.py
 ├── data/
 │   └── links.json       # URLs to scrape
+├── yoyo.ini            # Migration configuration
 └── init_db.py          # Database initialization script
 ```
 
@@ -160,19 +172,34 @@ backend/
 
 1. Install dependencies: `poetry install`
 2. Initialize the database: `cd backend && poetry run python init_db.py`
-3. Scrape content: `cd backend && poetry run python app/scraper.py data/links.json search.db`
-4. Run tests: `poetry run pytest` or `python scripts/run_tests.py`
-5. Start the backend server: `cd backend && poetry run uvicorn app.main:app --reload`
-6. Start the frontend development server: `cd frontend && npm start`
-7. Make changes to code - servers will automatically reload
+3. Run database migrations: `cd backend && yoyo apply`
+4. Scrape content: `cd backend && poetry run python app/scraper.py data/links.json search.db`
+5. Run tests: `poetry run pytest` or `./scripts/pre-push.sh`
+6. Start the backend server: `cd backend && poetry run uvicorn app.main:app --reload`
+7. Start the frontend development server: `cd frontend && npm start`
+8. Make changes to code - servers will automatically reload
+
+## Database Migrations
+
+Database schema changes are managed using yoyo-migrations. All migrations are written in raw SQL.
+
+### Creating a new migration:
+
+1. Create a new SQL file in `backend/migrations/` with format: `NNN_description.sql`
+2. Add the migration SQL
+3. Create a corresponding rollback file: `NNN_description_rollback.sql`
+4. Apply with: `cd backend && yoyo apply`
+
+### Migration naming convention:
+- `001_initial_schema.sql` / `001_initial_schema_rollback.sql`
+- `002_add_embeddings.sql` / `002_add_embeddings_rollback.sql`
 
 ## CI/CD Pipeline
 
 The project uses GitHub Actions for continuous integration:
 - **Backend Tests**: Python 3.11/3.12 with pytest, coverage reporting
 - **Frontend Tests**: Node.js with npm test and build verification
-- **Linting**: Ruff and Black for Python, ESLint for TypeScript
-- **Security**: Safety and Bandit security checks
+- **Linting**: Ruff and Black for Python code quality
 - **Integration**: Full API testing with both services running
 
 ## Development notes
