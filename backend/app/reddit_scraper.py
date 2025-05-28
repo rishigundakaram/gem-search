@@ -8,13 +8,12 @@ import re
 import time
 import requests
 import random
-from datetime import datetime, timedelta
 from urllib.parse import urlparse
 # Import from the same directory
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from scraper import scrape_with_discovery_concurrent, get_existing_urls
+from scraper import scrape_with_discovery_concurrent
 
 # Configuration constants
 MAX_CONCURRENT = 30          # Max concurrent requests for optimal speed

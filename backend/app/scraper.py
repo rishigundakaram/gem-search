@@ -11,14 +11,15 @@ import urllib3
 import time
 import asyncio
 import aiohttp
-import threading
 from newspaper import Article
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Suppress SSL warnings to reduce noise
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+# Constants
+DEFAULT_USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
 
 
 def fetch_and_parse(url):
@@ -34,7 +35,7 @@ def fetch_and_parse(url):
     try:
         # First, download the content with custom headers
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            'User-Agent': DEFAULT_USER_AGENT
         }
         downloaded = trafilatura.fetch_url(url, headers=headers, timeout=15)
         if not downloaded:
@@ -83,7 +84,7 @@ def fetch_and_parse(url):
         # Final fallback: handle plain text files
         try:
             headers = {
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                'User-Agent': DEFAULT_USER_AGENT
             }
             response = requests.get(url, headers=headers, timeout=15, verify=False)
             response.raise_for_status()
@@ -174,7 +175,7 @@ def discover_links(url, same_domain_only=True):
     
     try:
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            'User-Agent': DEFAULT_USER_AGENT
         }
         response = requests.get(url, headers=headers, timeout=15, verify=False)
         response.raise_for_status()
@@ -388,7 +389,7 @@ async def fetch_and_parse_async(session, url, semaphore):
     async with semaphore:
         try:
             headers = {
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                'User-Agent': DEFAULT_USER_AGENT
             }
             
             timeout = aiohttp.ClientTimeout(total=15)
@@ -472,7 +473,7 @@ async def discover_links_async(session, url, semaphore, same_domain_only=True):
         
         try:
             headers = {
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                'User-Agent': DEFAULT_USER_AGENT
             }
             
             timeout = aiohttp.ClientTimeout(total=15)

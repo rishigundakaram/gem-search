@@ -214,7 +214,7 @@ The project uses GitHub Actions for continuous integration:
 ### Running Tests
 
 ```bash
-cd search
+cd backend
 poetry run pytest tests/ -v
 ```
 
