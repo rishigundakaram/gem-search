@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 import os
 
 from app.database import get_db, init_database
+from app.vector_search import vector_search
 
 # API Key configuration
 API_KEY = os.getenv("API_KEY", "gem-search-dev-key-12345")
@@ -23,6 +24,11 @@ class SearchQuery(BaseModel):
 class SearchResult(BaseModel):
     title: str
     url: str
+
+class VectorSearchResult(BaseModel):
+    title: str
+    url: str
+    score: float
 
 # Initialize the FastAPI application
 app = FastAPI(
@@ -79,6 +85,22 @@ async def search(search_query: SearchQuery, db: Session = Depends(get_db), api_k
     except Exception as e:
         print(f"Search error: {e}")
         raise HTTPException(status_code=500, detail=f"Search error: {str(e)}")
+
+@app.post("/vector-search", response_model=List[VectorSearchResult])
+async def vector_search_endpoint(search_query: SearchQuery, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
+    """Search documents using vector embeddings and semantic similarity."""
+    query = search_query.query.strip()
+    
+    # Return empty results for empty queries
+    if not query:
+        return []
+    
+    try:
+        results = vector_search.search_similar(query, db, top_k=10)
+        return [{"title": title, "url": url, "score": score} for title, url, score in results]
+    except Exception as e:
+        print(f"Vector search error: {e}")
+        raise HTTPException(status_code=500, detail=f"Vector search error: {str(e)}")
 
 @app.get("/health")
 async def health_check():

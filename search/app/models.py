@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text
+from sqlalchemy import Column, Integer, String, Text, LargeBinary
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
@@ -10,6 +10,7 @@ class Document(Base):
     url = Column(String, unique=True, nullable=False)
     title = Column(String)
     content = Column(Text)
+    embedding = Column(LargeBinary)
     
     def __repr__(self):
         return f"<Document(title='{self.title}', url='{self.url}')>"

@@ -37,7 +37,8 @@ def init_database(db_path="search.db"):
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         url TEXT UNIQUE,
         title TEXT,
-        content TEXT
+        content TEXT,
+        embedding BLOB
     )
     ''')
     
