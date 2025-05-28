@@ -65,6 +65,23 @@ To run all tests (backend + integration):
 poetry run pytest -v
 ```
 
+### Code Quality and Formatting
+
+**CRITICAL: Always run linting and formatting before pushing**
+
+Before pushing any code changes, run these commands to fix linting and formatting issues:
+
+```bash
+# Fix linting issues
+poetry run ruff check backend/ --fix
+
+# Format code with Black
+poetry run black backend/
+
+# Run tests to ensure nothing is broken
+cd backend && poetry run pytest tests/ -v
+```
+
 ### Pre-Push Quality Checks
 
 Before pushing code to the remote repository, run the comprehensive pre-push script:
@@ -206,3 +223,48 @@ The project uses GitHub Actions for continuous integration:
 
 1. Do not include any demo code, examples, or unused code in the final PR. It's really important to keep
    PRs non-bloated and crisp because otherwise they're hard to review.
+
+## Testing Requirements
+
+**CRITICAL: Always run tests before submitting code to the user**
+
+### Running Tests
+
+```bash
+cd backend
+poetry run pytest tests/ -v
+```
+
+### Test Coverage Requirements
+
+- **All new functions must have tests** - No exceptions
+- **All modified functions must have updated tests**
+- **All tests must pass** before submitting code
+- **Integration tests should use mocked external dependencies**
+
+### Test Categories
+
+1. **Unit Tests**: Test individual functions in isolation
+2. **Integration Tests**: Test component interactions 
+3. **API Tests**: Test HTTP endpoints
+4. **Database Tests**: Test database operations with temp databases
+
+### Test Patterns
+
+- Use `pytest` fixtures for setup/teardown
+- Mock external dependencies (HTTP calls, file operations)
+- Use temporary databases for database tests
+- Test both success and error cases
+- Include edge cases and validation tests
+
+### Pre-Submission Checklist
+
+Before submitting ANY code changes:
+
+1. ✅ Run `poetry run pytest tests/ -v` 
+2. ✅ All tests pass (no failures, no errors)
+3. ✅ New code has corresponding tests
+4. ✅ Modified code has updated tests
+5. ✅ No commented-out code or debug prints
+
+**If tests fail or are missing, do not submit code to the user until fixed.**

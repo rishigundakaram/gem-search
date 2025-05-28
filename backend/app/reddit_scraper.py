@@ -1,15 +1,54 @@
 #!/usr/bin/env python3
 """
-Reddit scraper for r/InternetIsBeautiful subreddit.
-Extracts URLs from posts and scrapes them with depth 2.
+Simplified Reddit scraper for discovering hidden gems.
+Extracts URLs from posts and scrapes them with concurrent processing.
 """
 import json
+import random
 import re
+
+# Import from the same directory
 import time
 from urllib.parse import urlparse
 
 import requests
-from scraper import scrape_with_discovery
+
+from .scraper import scrape_with_discovery_concurrent
+
+# Configuration constants
+MAX_CONCURRENT = 30  # Max concurrent requests for optimal speed
+DISCOVER_DEPTH = 2  # Link discovery depth (2 is sweet spot)
+DEFAULT_DELAY = 2  # Delay between Reddit API calls (seconds)
+DEFAULT_PAGES = 20  # Default pages to scrape in continuous mode
+
+
+def get_random_time_filter():
+    """
+    Get a random time filter for discovering content from different periods.
+
+    Returns:
+        str: Random time filter (day, week, month, year, all)
+    """
+    time_options = ["day", "week", "month", "year", "all"]
+    weights = [1, 2, 3, 2, 1]  # Prefer week/month for best content
+    return random.choices(time_options, weights=weights)[0]
+
+
+def get_random_sort_and_time():
+    """
+    Get a random sort method and time filter for content discovery.
+
+    Returns:
+        tuple: (sort_method, time_filter)
+    """
+    sort_options = ["hot", "new", "top", "rising"]
+    sort = random.choice(sort_options)
+
+    time_filter = None
+    if sort == "top":
+        time_filter = get_random_time_filter()
+
+    return sort, time_filter
 
 
 def get_reddit_posts(
@@ -28,13 +67,7 @@ def get_reddit_posts(
     Returns:
         tuple: (posts_list, next_after_token)
     """
-    # Handle random sorting by picking a random sort method
-    if sort == "random":
-        import random
-
-        sort_options = ["hot", "new", "top", "rising"]
-        sort = random.choice(sort_options)
-        print(f"Random sort selected: {sort}")
+    # Note: Random sorting is now handled by get_random_sort_and_time()
 
     url = f"https://www.reddit.com/r/{subreddit}/{sort}.json"
 
@@ -105,7 +138,7 @@ def extract_urls_from_text(text):
             if parsed.scheme and parsed.netloc:
                 urls.add(url)
         except Exception:
-            continue
+            pass
 
     return urls
 
@@ -141,28 +174,27 @@ def filter_reddit_urls(urls):
 
     for url in urls:
         try:
-            domain = urlparse(url).netloc.lower()
-            if domain not in skip_domains:
+            parsed = urlparse(url)
+            domain = parsed.netloc.lower()
+            # Skip if no domain (invalid URL) or domain is in skip list
+            if domain and domain not in skip_domains:
                 filtered.add(url)
         except Exception:
-            continue
+            pass
 
     return filtered
 
 
-def scrape_reddit_batch(
-    subreddit, db_path, limit=25, discover_depth=2, after=None, sort="hot", time_filter=None
-):
+def scrape_reddit_batch(subreddit, db_path, after=None, sort="hot", time_filter=None):
     """
     Scrape a batch of Reddit posts and extract websites with link discovery.
+    Uses concurrent processing with optimized settings.
 
     Args:
         subreddit: Subreddit name
         db_path: Database path
-        limit: Number of Reddit posts to process
-        discover_depth: Depth for link discovery on found websites
-        after: Pagination token for next page
-        sort: Sort method (hot, new, top, rising, random)
+        after: Pagination token for next page (optional)
+        sort: Sort method (hot, new, top, rising)
         time_filter: Time filter for top posts (hour, day, week, month, year, all)
 
     Returns:
@@ -170,9 +202,9 @@ def scrape_reddit_batch(
     """
     print(f"Fetching posts from r/{subreddit} (sort: {sort})...")
 
-    # Get Reddit posts with pagination
+    # Get Reddit posts with pagination (100 is Reddit API max)
     posts, next_after = get_reddit_posts(
-        subreddit, limit, sort=sort, after=after, time_filter=time_filter
+        subreddit, 100, sort=sort, after=after, time_filter=time_filter
     )
     if not posts:
         print("No posts found")
@@ -213,21 +245,28 @@ def scrape_reddit_batch(
     with open(temp_links_file, "w") as f:
         json.dump(list(filtered_urls), f, indent=2)
 
-    print(f"\\nStarting link discovery scraping with depth {discover_depth}...")
+    print(
+        f"\\nStarting concurrent link discovery scraping (depth {DISCOVER_DEPTH}, {MAX_CONCURRENT} max requests)..."
+    )
 
-    # Use existing scraper with discovery
+    # Use concurrent scraper with optimized settings
     try:
-        new_docs, total_discovered = scrape_with_discovery(
-            temp_links_file,
-            db_path,
-            discover_depth=discover_depth,
-            allow_cross_domain=False,  # Stay within same domains for each site
+        import asyncio
+
+        new_docs, total_discovered = asyncio.run(
+            scrape_with_discovery_concurrent(
+                temp_links_file,
+                db_path,
+                discover_depth=DISCOVER_DEPTH,
+                allow_cross_domain=False,  # Stay within same domains for each site
+                max_concurrent=MAX_CONCURRENT,
+            )
         )
 
         print("\\nReddit scraping complete!")
         print(f"- Found {len(all_urls)} URLs in Reddit posts")
         print(f"- Processed {len(filtered_urls)} URLs after filtering")
-        print(f"- Discovered {total_discovered} total URLs with depth {discover_depth}")
+        print(f"- Discovered {total_discovered} total URLs with depth {DISCOVER_DEPTH}")
         print(f"- Added {new_docs} new documents to database")
 
         return len(all_urls), new_docs, next_after
@@ -245,42 +284,27 @@ def scrape_reddit_batch(
             pass
 
 
-def scrape_reddit_continuous(
-    subreddit,
-    db_path,
-    discover_depth=2,
-    max_pages=None,
-    delay_seconds=5,
-    sort="hot",
-    time_filter=None,
-    random_start=False,
-):
+def scrape_reddit_continuous(subreddit, db_path, max_pages=DEFAULT_PAGES, random_dates=True):
     """
-    Continuously scrape Reddit subreddit with pagination until exhausted.
+    Continuously scrape Reddit subreddit with random date exploration.
+    Always uses concurrent processing for optimal speed.
 
     Args:
-        subreddit: Subreddit name
+        subreddit: Subreddit name (default: InternetIsBeautiful)
         db_path: Database path
-        discover_depth: Depth for link discovery on found websites
-        max_pages: Maximum pages to process (None = unlimited)
-        delay_seconds: Delay between Reddit API calls to be respectful
-        sort: Sort method (hot, new, top, rising, random)
-        time_filter: Time filter for top posts (hour, day, week, month, year, all)
-        random_start: If True, randomize sort method for each page
+        max_pages: Maximum pages to process (default: 20)
+        random_dates: Use random sort methods and time filters for diversity
 
     Returns:
         dict: Summary statistics
     """
-    print(f"Starting continuous scraping of r/{subreddit}")
-    print(f"Sort method: {sort}")
-    if time_filter:
-        print(f"Time filter: {time_filter}")
-    if random_start:
-        print("Random start points enabled - will vary sort method")
-    print(f"Link discovery depth: {discover_depth}")
-    print(f"Delay between API calls: {delay_seconds}s")
-    print(f"Max pages: {max_pages if max_pages else 'unlimited'}")
-    print("-" * 50)
+    print(f"🚀 Starting high-speed scraping of r/{subreddit}")
+    print(f"Random date exploration: {'enabled' if random_dates else 'disabled'}")
+    print(f"Link discovery depth: {DISCOVER_DEPTH}")
+    print(f"Concurrent requests: {MAX_CONCURRENT}")
+    print(f"API call delay: {DEFAULT_DELAY}s")
+    print(f"Max pages: {max_pages}")
+    print("-" * 60)
 
     total_reddit_urls = 0
     total_new_docs = 0
@@ -292,34 +316,23 @@ def scrape_reddit_continuous(
             page_count += 1
             print(f"\n=== PAGE {page_count} ===")
 
-            # Determine sort method for this page
-            current_sort = sort
-            current_time_filter = time_filter
-
-            if random_start:
-                import random
-
-                sort_options = ["hot", "new", "top", "rising"]
-                current_sort = random.choice(sort_options)
-
-                # If we picked 'top', also randomize time filter
-                if current_sort == "top":
-                    time_options = ["day", "week", "month", "year", "all"]
-                    current_time_filter = random.choice(time_options)
-                    print(f"Random selection: {current_sort} (time: {current_time_filter})")
+            # Determine sort method and time filter
+            if random_dates:
+                current_sort, current_time_filter = get_random_sort_and_time()
+                if current_time_filter:
+                    print(f"🎲 Random selection: {current_sort} (time: {current_time_filter})")
                 else:
-                    print(f"Random selection: {current_sort}")
-                    current_time_filter = None
-
+                    print(f"🎲 Random selection: {current_sort}")
                 # Reset after_token when changing sort method to start fresh
                 after_token = None
+            else:
+                current_sort = "hot"
+                current_time_filter = None
 
             # Scrape batch with pagination
             reddit_urls, new_docs, next_after = scrape_reddit_batch(
                 subreddit,
                 db_path,
-                limit=100,
-                discover_depth=discover_depth,
                 after=after_token,
                 sort=current_sort,
                 time_filter=current_time_filter,
@@ -330,7 +343,7 @@ def scrape_reddit_continuous(
             total_new_docs += new_docs
 
             # Check if we're done
-            if not next_after or (max_pages and page_count >= max_pages):
+            if not next_after or page_count >= max_pages:
                 print("\\nReached end of available posts or max pages limit")
                 break
 
@@ -342,9 +355,8 @@ def scrape_reddit_continuous(
             print(f"- Total new documents added: {total_new_docs}")
 
             # Respectful delay between API calls
-            if delay_seconds > 0:
-                print(f"Waiting {delay_seconds}s before next page...")
-                time.sleep(delay_seconds)
+            print(f"Waiting {DEFAULT_DELAY}s before next page...")
+            time.sleep(DEFAULT_DELAY)
 
     except KeyboardInterrupt:
         print("\\n\\nScraping interrupted by user (Ctrl+C)")
@@ -361,14 +373,24 @@ def scrape_reddit_continuous(
 
     # Get final database count
     try:
+        import os
         import sqlite3
 
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-        cursor.execute("SELECT COUNT(*) FROM documents")
-        final_count = cursor.fetchone()[0]
-        conn.close()
-        print(f"Final database size: {final_count} documents")
+        if not os.path.exists(db_path):
+            print(f"Database file {db_path} does not exist")
+        else:
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            # Check if documents table exists
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='documents'")
+            if cursor.fetchone():
+                cursor.execute("SELECT COUNT(*) FROM documents")
+                final_count = cursor.fetchone()[0]
+                print(f"Final database size: {final_count} documents")
+            else:
+                print("Documents table not found - need to initialize database")
+                print("Run: python init_db.py")
+            conn.close()
     except Exception as e:
         print(f"Could not get final database count: {e}")
 
@@ -383,81 +405,56 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Scrape Reddit subreddit and extract linked websites."
+        description="🚀 High-speed Reddit scraper for discovering hidden gems",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=f"""
+Examples:
+  python reddit_scraper.py                           # Quick single batch
+  python reddit_scraper.py --continuous              # Continuous with random dates
+  python reddit_scraper.py --subreddit programming   # Different subreddit
+
+Configuration:
+  Max concurrent requests: {MAX_CONCURRENT}
+  Link discovery depth: {DISCOVER_DEPTH}
+  API delay: {DEFAULT_DELAY}s
+        """,
     )
+
     parser.add_argument(
         "--subreddit",
+        "-s",
         default="InternetIsBeautiful",
-        help="Subreddit to scrape (default: InternetIsBeautiful)",
-    )
-    parser.add_argument("--db-path", default="search.db", help="Database path (default: search.db)")
-    parser.add_argument(
-        "--limit",
-        type=int,
-        default=25,
-        help="Number of Reddit posts to process in single batch mode (default: 25)",
+        help="Subreddit to scrape (default: %(default)s)",
     )
     parser.add_argument(
-        "--discover-depth",
-        type=int,
-        default=2,
-        help="Link discovery depth for websites (default: 2)",
+        "--db-path", default="search.db", help="Database path (default: %(default)s)"
     )
     parser.add_argument(
         "--continuous",
+        "-c",
         action="store_true",
-        help="Run in continuous mode to scrape all available posts with pagination",
+        help="Run continuously with random date exploration",
     )
     parser.add_argument(
         "--max-pages",
         type=int,
-        default=None,
-        help="Maximum pages to process in continuous mode (default: unlimited)",
+        default=DEFAULT_PAGES,
+        help="Max pages in continuous mode (default: %(default)s)",
     )
     parser.add_argument(
-        "--delay",
-        type=int,
-        default=5,
-        help="Delay in seconds between Reddit API calls (default: 5)",
-    )
-    parser.add_argument(
-        "--sort",
-        default="hot",
-        choices=["hot", "new", "top", "rising", "random"],
-        help="Sort method for Reddit posts (default: hot)",
-    )
-    parser.add_argument(
-        "--time-filter",
-        choices=["hour", "day", "week", "month", "year", "all"],
-        help="Time filter for top posts (only used with --sort top)",
-    )
-    parser.add_argument(
-        "--random-start",
+        "--no-random-dates",
         action="store_true",
-        help="Randomize sort method for each page in continuous mode",
+        help="Disable random date exploration (use hot posts only)",
     )
 
     args = parser.parse_args()
 
     if args.continuous:
-        print("Running in CONTINUOUS mode - will scrape all available posts")
+        print("🔄 Running in CONTINUOUS mode")
         scrape_reddit_continuous(
-            args.subreddit,
-            args.db_path,
-            args.discover_depth,
-            args.max_pages,
-            args.delay,
-            args.sort,
-            args.time_filter,
-            args.random_start,
+            args.subreddit, args.db_path, args.max_pages, random_dates=not args.no_random_dates
         )
     else:
-        print("Running in SINGLE BATCH mode")
-        reddit_urls, new_docs, _ = scrape_reddit_batch(
-            args.subreddit,
-            args.db_path,
-            args.limit,
-            args.discover_depth,
-            sort=args.sort,
-            time_filter=args.time_filter,
-        )
+        print("⚡ Running SINGLE BATCH mode")
+        reddit_urls, new_docs, _ = scrape_reddit_batch(args.subreddit, args.db_path)
+        print(f"\nQuick batch complete: {new_docs} documents added")
