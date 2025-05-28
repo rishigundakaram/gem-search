@@ -12,6 +12,7 @@ export async function searchDocuments(query: string): Promise<SearchResult[]> {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "X-API-Key": process.env.REACT_APP_API_KEY || "gem-search-dev-key-12345",
     },
     body: JSON.stringify({ query }),
   });

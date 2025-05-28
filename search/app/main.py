@@ -1,11 +1,20 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List
+from typing import List, Annotated
 from sqlalchemy import text
 from sqlalchemy.orm import Session
+import os
 
 from app.database import get_db, init_database
+
+# API Key configuration
+API_KEY = os.getenv("API_KEY", "gem-search-dev-key-12345")
+
+def verify_api_key(x_api_key: Annotated[str, Header()]):
+    if x_api_key != API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    return x_api_key
 
 # Define request and response models
 class SearchQuery(BaseModel):
@@ -25,6 +34,8 @@ app = FastAPI(
 # Configure CORS
 origins = [
     "http://localhost:3000",
+    "https://*.vercel.app",
+    "https://gem-search-2.vercel.app",
 ]
 
 app.add_middleware(
@@ -44,7 +55,7 @@ async def startup_event():
         print(f"Failed to initialize database: {e}")
 
 @app.post("/search", response_model=List[SearchResult])
-async def search(search_query: SearchQuery, db: Session = Depends(get_db)):
+async def search(search_query: SearchQuery, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
     """Search documents using FTS5."""
     query = search_query.query.strip()
     
