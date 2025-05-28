@@ -56,11 +56,23 @@ To run all tests (backend + integration):
 poetry run pytest -v
 ```
 
-To run tests locally (mimics CI/CD):
+### Pre-Push Quality Checks
+
+Before pushing code to the remote repository, run the comprehensive pre-push script:
 
 ```bash
-python scripts/run_tests.py
+./scripts/pre-push.sh
 ```
+
+This script performs all CI/CD checks locally:
+- ✅ Ruff linting and code quality checks
+- ✅ Black code formatting verification  
+- ✅ Backend unit tests with coverage
+- ✅ Integration tests (if backend server available)
+- ✅ Frontend tests and build verification
+- 🚀 Provides clear feedback and helpful tips for fixing issues
+
+The script ensures your code will pass CI/CD before pushing, saving time and preventing failed builds.
 
 ### Frontend (React/TypeScript)
 

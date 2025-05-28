@@ -13,7 +13,7 @@ import pytest
 # Add the parent directory to the path so we can import the scraper module
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from app.scraper import discover_links, fetch_and_parse, scrape_links_to_database
+from app.scraper import discover_links, fetch_and_parse, scrape_links_to_database  # noqa: E402
 
 
 class TestTrafilaturaIntegration:

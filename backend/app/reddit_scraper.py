@@ -4,16 +4,11 @@ Reddit scraper for r/InternetIsBeautiful subreddit.
 Extracts URLs from posts and scrapes them with depth 2.
 """
 import json
-import os
 import re
-import sys
 import time
 from urllib.parse import urlparse
 
 import requests
-
-# Import from the same directory
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from scraper import scrape_with_discovery
 
 

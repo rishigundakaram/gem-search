@@ -88,7 +88,7 @@ async def search(
         return results
     except Exception as e:
         print(f"Search error: {e}")
-        raise HTTPException(status_code=500, detail=f"Search error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Search error: {str(e)}") from e
 
 
 @app.get("/health")

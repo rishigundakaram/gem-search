@@ -60,7 +60,7 @@ def init_database(db_path="search.db"):
         error_msg = f"FTS5 extension is required but not available: {e}"
         print(error_msg)
         conn.close()
-        raise RuntimeError(error_msg)
+        raise RuntimeError(error_msg) from e
 
     conn.commit()
     return conn
