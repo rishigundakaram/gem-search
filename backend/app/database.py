@@ -2,6 +2,7 @@
 Database module for Gem Search.
 Handles SQLite database setup, sessions, and FTS5 initialization.
 """
+
 import os
 import sqlite3
 
