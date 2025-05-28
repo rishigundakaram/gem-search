@@ -27,6 +27,15 @@ cd search
 python init_db.py
 ```
 
+To run database migrations:
+
+```bash
+cd search
+yoyo apply               # Apply pending migrations
+yoyo rollback            # Rollback last migration
+yoyo list                # List migration status
+```
+
 To run the FastAPI server:
 
 ```bash
@@ -79,11 +88,14 @@ search/
 │   ├── main.py          # FastAPI application and routes
 │   ├── models.py        # SQLAlchemy models
 │   └── scraper.py       # Content scraping functionality
+├── migrations/          # Database migrations (yoyo-migrations)
+│   └── *.sql           # SQL migration files
 ├── tests/
 │   ├── test_api.py      # API endpoint tests
 │   └── test_scraper.py  # Scraper functionality tests
 ├── data/
 │   └── links.json       # URLs to scrape
+├── yoyo.ini            # Migration configuration
 └── init_db.py          # Database initialization script
 ```
 
@@ -133,12 +145,27 @@ search/
 ## Development Workflow
 
 1. Install dependencies: `pip install -r requirements.txt`
-2. Initialize the database: `python init_db.py`
+2. Run database migrations: `yoyo apply`
 3. Scrape content: `python app/scraper.py data/links.json search.db`
 4. Run tests: `pytest`
 5. Start the backend server: `uvicorn app.main:app --reload`
 6. Start the frontend development server: `npm start`
 7. Make changes to code - servers will automatically reload
+
+## Database Migrations
+
+Database schema changes are managed using yoyo-migrations. All migrations are written in raw SQL.
+
+### Creating a new migration:
+
+1. Create a new SQL file in `search/migrations/` with format: `NNN_description.sql`
+2. Add the migration SQL
+3. Create a corresponding rollback file: `NNN_description_rollback.sql`
+4. Apply with: `yoyo apply`
+
+### Migration naming convention:
+- `001_initial_schema.sql` / `001_initial_schema_rollback.sql`
+- `002_add_embeddings.sql` / `002_add_embeddings_rollback.sql`
 
 ## Development notes
 
