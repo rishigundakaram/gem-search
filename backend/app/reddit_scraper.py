@@ -12,6 +12,7 @@ import time
 from urllib.parse import urlparse
 
 import requests
+
 from .scraper import scrape_with_discovery_concurrent
 
 # Configuration constants
