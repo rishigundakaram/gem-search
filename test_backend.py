@@ -1,0 +1,69 @@
+#!/usr/bin/env python3
+"""
+Simple backend functionality test.
+"""
+import sys
+import os
+
+# Add search directory to path
+search_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'search')
+sys.path.insert(0, search_dir)
+
+def test_imports():
+    """Test that all modules can be imported."""
+    try:
+        from app.main import app, SearchQuery, SearchResult
+        from app.database import init_database, get_db
+        from app.models import Document
+        print("✓ All imports successful")
+        return True
+    except Exception as e:
+        print(f"✗ Import failed: {e}")
+        return False
+
+def test_database():
+    """Test database initialization."""
+    try:
+        from app.database import init_database
+        conn = init_database("test_search.db")
+        conn.close()
+        print("✓ Database initialization successful")
+        
+        # Clean up test database
+        os.remove("test_search.db")
+        return True
+    except Exception as e:
+        print(f"✗ Database test failed: {e}")
+        return False
+
+def test_app_creation():
+    """Test FastAPI app creation."""
+    try:
+        from app.main import app
+        assert app is not None
+        print("✓ FastAPI app creation successful")
+        return True
+    except Exception as e:
+        print(f"✗ App creation failed: {e}")
+        return False
+
+def run_tests():
+    """Run all tests."""
+    print("Testing backend functionality...")
+    tests = [
+        test_imports,
+        test_database, 
+        test_app_creation
+    ]
+    
+    passed = 0
+    for test in tests:
+        if test():
+            passed += 1
+    
+    print(f"\nResults: {passed}/{len(tests)} tests passed")
+    return passed == len(tests)
+
+if __name__ == "__main__":
+    success = run_tests()
+    sys.exit(0 if success else 1)

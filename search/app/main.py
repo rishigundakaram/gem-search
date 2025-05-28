@@ -5,7 +5,7 @@ from typing import List
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.database import get_db
+from app.database import get_db, init_database
 
 # Define request and response models
 class SearchQuery(BaseModel):
@@ -34,6 +34,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database on startup."""
+    try:
+        init_database()
+    except Exception as e:
+        print(f"Failed to initialize database: {e}")
 
 @app.post("/search", response_model=List[SearchResult])
 async def search(search_query: SearchQuery, db: Session = Depends(get_db)):
