@@ -1,46 +1,183 @@
-# Getting Started with Create React App
+# Gem Search Frontend 💎
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+**React TypeScript frontend for the Gem Search application**
 
-## Available Scripts
+A modern, responsive web interface for searching and discovering web content with real-time full-text search capabilities.
 
-In the project directory, you can run:
+## 🛠️ Tech Stack
 
-### `npm start`
+- **React 18** - Modern React with hooks and functional components
+- **TypeScript** - Type-safe JavaScript with enhanced developer experience  
+- **Material-UI** - Comprehensive React component library
+- **Create React App** - Zero-configuration build setup
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+## 🚀 Development
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+### Prerequisites
+- **Node.js 18+**
+- **npm** (comes with Node.js)
 
-### `npm test`
+### Getting Started
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```bash
+# Install dependencies
+npm install
 
-### `npm run build`
+# Start development server
+npm start
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Open [http://localhost:3000](http://localhost:3000) to view the application.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+The development server features:
+- 🔄 **Hot reload** - Automatic page refresh on code changes
+- 🐛 **Error overlay** - Helpful error messages in the browser
+- 🎯 **Fast refresh** - Preserve component state during edits
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### Available Scripts
 
-### `npm run eject`
+| Command | Description |
+|---------|-------------|
+| `npm start` | Start development server at http://localhost:3000 |
+| `npm test` | Run tests in interactive watch mode |
+| `npm run build` | Build optimized production bundle |
+| `npm run eject` | Eject from Create React App (⚠️ irreversible) |
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+## 📁 Project Structure
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```
+frontend/src/
+├── components/           # Reusable UI components
+│   ├── SearchBar.tsx    # Search input component
+│   └── SearchResults.tsx # Results display component
+├── containers/          # Container components with business logic
+│   └── SearchContainer.tsx # Main search orchestration
+├── api/                # API integration layer
+│   └── SearchAPI.ts    # Backend API communication
+├── App.tsx             # Root application component
+└── index.tsx           # Application entry point
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+## 🔌 API Integration
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+The frontend communicates with the FastAPI backend through a clean API layer:
 
-## Learn More
+```typescript
+// Example API usage
+import { searchContent } from './api/SearchAPI';
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+const results = await searchContent('artificial intelligence');
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+### Backend Connection
+- **Development**: `http://localhost:8000` (FastAPI dev server)
+- **Production**: Configure backend URL in deployment
+
+## 🎨 UI Components
+
+### SearchBar
+- Real-time search input with debouncing
+- Keyboard shortcuts and accessibility
+- Loading states and error handling
+
+### SearchResults  
+- Paginated results display
+- Relevance scoring visualization
+- Responsive card-based layout
+
+### SearchContainer
+- Orchestrates search flow and state management
+- Handles API communication and error states
+- Manages search history and preferences
+
+## 📱 Responsive Design
+
+- **Mobile-first** approach with Material-UI breakpoints
+- **Touch-friendly** interface with appropriate sizing
+- **Accessible** design following WCAG guidelines
+
+## 🧪 Testing
+
+```bash
+# Run tests in watch mode
+npm test
+
+# Run tests with coverage
+npm test -- --coverage
+
+# Run tests in CI mode  
+npm test -- --watchAll=false
+```
+
+### Testing Strategy
+- **Component tests** - Render and interaction testing
+- **Integration tests** - API communication testing
+- **Accessibility tests** - Screen reader and keyboard navigation
+
+## 🚀 Production Build
+
+```bash
+# Create optimized production build
+npm run build
+```
+
+This creates a `build/` directory with:
+- ⚡ **Minified and optimized** JavaScript and CSS
+- 📦 **Code splitting** for optimal loading performance  
+- 🗜️ **Gzipped assets** for minimal transfer size
+- 📄 **Static files** ready for deployment
+
+### Deployment Options
+- **Static hosting**: Vercel, Netlify, GitHub Pages
+- **CDN**: AWS CloudFront, Cloudflare
+- **Traditional hosting**: Apache, Nginx
+
+## ⚙️ Configuration
+
+### Environment Variables
+Create `.env.local` for local development:
+```bash
+REACT_APP_API_URL=http://localhost:8000
+```
+
+### Build Optimization
+The build process automatically:
+- 🗜️ Minifies code for production
+- 📦 Splits code into optimal chunks  
+- 🖼️ Optimizes images and assets
+- 📋 Generates service worker for caching
+
+## 🔧 Development Tips
+
+### Hot Reload
+Changes to components trigger automatic browser refresh while preserving state.
+
+### Error Handling  
+Development mode shows helpful error overlays with:
+- Stack traces with source mapping
+- Compilation errors with file locations
+- Runtime errors with component stack
+
+### Debugging
+Use React Developer Tools browser extension for:
+- Component tree inspection
+- Props and state debugging  
+- Performance profiling
+
+## 📚 Learn More
+
+- [React Documentation](https://reactjs.org/)
+- [TypeScript Handbook](https://www.typescriptlang.org/docs/)
+- [Material-UI Documentation](https://mui.com/)
+- [Create React App Documentation](https://create-react-app.dev/)
+
+## 🤝 Contributing
+
+1. Follow existing code style and TypeScript patterns
+2. Add tests for new components and features
+3. Ensure responsive design works across devices
+4. Test accessibility with screen readers
+
+---
+
+**Part of the Gem Search project** - Building modern web search experiences.
