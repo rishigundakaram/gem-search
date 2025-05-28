@@ -12,7 +12,7 @@ from urllib.parse import urljoin, urlparse
 
 def fetch_and_parse(url):
     """
-    Fetch and parse content from a URL.
+    Fetch and parse content from a URL using multiple extraction methods.
     
     Args:
         url: The URL to fetch and parse
@@ -20,18 +20,72 @@ def fetch_and_parse(url):
     Returns:
         tuple: (title, content) or (None, None) if failed
     """
+    # First try newspaper3k for structured articles
     try:
         article = Article(url)
         article.download()
         article.parse()
         
-        title = article.title
-        content = article.text
+        if article.title and article.text and len(article.text.strip()) > 50:
+            return article.title, article.text
+    except Exception:
+        pass  # Fall back to manual extraction
+    
+    # Fallback: manual extraction for raw text files and simple pages
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
         
-        return title, content
+        content_type = response.headers.get('content-type', '').lower()
+        
+        # Handle plain text files directly
+        if 'text/plain' in content_type:
+            content = response.text.strip()
+            if len(content) > 50:  # Only process if substantial content
+                # Use filename as title for text files
+                filename = url.split('/')[-1]
+                title = filename if filename else f"Text from {urlparse(url).netloc}"
+                return title, content
+        
+        # Handle HTML with BeautifulSoup fallback
+        elif 'text/html' in content_type or not content_type:
+            soup = BeautifulSoup(response.content, 'html.parser')
+            
+            # Remove script and style elements
+            for script in soup(["script", "style", "nav", "footer", "header"]):
+                script.decompose()
+            
+            # Try to get title
+            title_elem = soup.find('title')
+            title = title_elem.get_text().strip() if title_elem else f"Page from {urlparse(url).netloc}"
+            
+            # Get main content - try common content containers first
+            content = None
+            for selector in ['main', 'article', '.content', '#content', '.post', '.entry']:
+                content_elem = soup.select_one(selector)
+                if content_elem:
+                    content = content_elem.get_text(separator=' ', strip=True)
+                    break
+            
+            # If no specific content container, get body text
+            if not content or len(content) < 50:
+                body = soup.find('body')
+                if body:
+                    content = body.get_text(separator=' ', strip=True)
+            
+            # Clean up content
+            if content:
+                # Remove excessive whitespace
+                import re
+                content = re.sub(r'\s+', ' ', content).strip()
+                
+                if len(content) > 50:
+                    return title, content
+        
     except Exception as e:
         print(f"Failed to process {url}. Error: {e}")
-        return None, None
+    
+    return None, None
 
 
 def discover_links(url, same_domain_only=True):
