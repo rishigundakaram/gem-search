@@ -65,6 +65,23 @@ To run all tests (backend + integration):
 poetry run pytest -v
 ```
 
+### Code Quality and Formatting
+
+**CRITICAL: Always run linting and formatting before pushing**
+
+Before pushing any code changes, run these commands to fix linting and formatting issues:
+
+```bash
+# Fix linting issues
+poetry run ruff check backend/ --fix
+
+# Format code with Black
+poetry run black backend/
+
+# Run tests to ensure nothing is broken
+cd backend && poetry run pytest tests/ -v
+```
+
 ### Pre-Push Quality Checks
 
 Before pushing code to the remote repository, run the comprehensive pre-push script:
