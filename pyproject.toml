@@ -1,0 +1,67 @@
+[tool.poetry]
+name = "gem-search"
+version = "0.1.0"
+description = "A web application for mining the hidden gems of the internet"
+authors = ["Your Name <your.email@example.com>"]
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.11"
+# Backend dependencies
+fastapi = "^0.104.0"
+uvicorn = "^0.24.0"
+sqlalchemy = "^2.0.0"
+pydantic = "^2.5.0"
+newspaper3k = "^0.2.8"
+beautifulsoup4 = "^4.12.0"
+requests = "^2.31.0"
+trafilatura = "^1.12.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.0"
+pytest-asyncio = "^0.21.0"
+pytest-cov = "^4.1.0"
+ruff = "^0.1.0"
+black = "^23.0.0"
+safety = "^2.3.0"
+bandit = "^1.7.0"
+
+[tool.pytest.ini_options]
+testpaths = ["backend/tests", "tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--cov=backend",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-report=xml"
+]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings  
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+    "C4", # flake8-comprehensions
+    "UP", # pyupgrade
+]
+ignore = [
+    "E501",  # line too long, handled by black
+    "B008",  # do not perform function calls in argument defaults
+]
+
+[tool.black]
+target-version = ['py311']
+include = '\.pyi?$'
+line-length = 100
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
