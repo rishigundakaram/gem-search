@@ -43,14 +43,14 @@ class EmbeddingService:
             logger.info(f"Loading Jina CLIP v2 model: {self.model_name}")
             # Use local_files_only=True if offline mode is set (for CI)
             offline_mode = os.getenv("HF_HUB_OFFLINE", "0") == "1"
-            
+
             self.tokenizer = AutoTokenizer.from_pretrained(
-                self.model_name, 
+                self.model_name,
                 trust_remote_code=True,
                 local_files_only=offline_mode
             )
             self.model = AutoModel.from_pretrained(
-                self.model_name, 
+                self.model_name,
                 trust_remote_code=True,
                 local_files_only=offline_mode
             )

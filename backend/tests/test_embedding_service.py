@@ -2,6 +2,7 @@
 Tests for the embedding service module.
 """
 
+import os
 from unittest.mock import Mock, patch
 
 import pytest
@@ -26,12 +27,23 @@ class TestEmbeddingService:
 
         assert service.model_name == "jinaai/jina-clip-v2"
         assert service.device == 'cpu'
-        mock_tokenizer_class.from_pretrained.assert_called_once_with(
-            "jinaai/jina-clip-v2", trust_remote_code=True
-        )
-        mock_model_class.from_pretrained.assert_called_once_with(
-            "jinaai/jina-clip-v2", trust_remote_code=True
-        )
+
+        # Check if offline mode is set (CI environment)
+        offline_mode = os.getenv("HF_HUB_OFFLINE", "0") == "1"
+        if offline_mode:
+            mock_tokenizer_class.from_pretrained.assert_called_once_with(
+                "jinaai/jina-clip-v2", trust_remote_code=True, local_files_only=True
+            )
+            mock_model_class.from_pretrained.assert_called_once_with(
+                "jinaai/jina-clip-v2", trust_remote_code=True, local_files_only=True
+            )
+        else:
+            mock_tokenizer_class.from_pretrained.assert_called_once_with(
+                "jinaai/jina-clip-v2", trust_remote_code=True, local_files_only=False
+            )
+            mock_model_class.from_pretrained.assert_called_once_with(
+                "jinaai/jina-clip-v2", trust_remote_code=True, local_files_only=False
+            )
         mock_model.to.assert_called_once_with('cpu')
         mock_model.eval.assert_called_once()
 
