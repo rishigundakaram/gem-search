@@ -21,14 +21,7 @@ poetry install
 
 ### Backend (Python)
 
-To initialize the SQLite database:
-
-```bash
-cd backend
-poetry run python init_db.py
-```
-
-To run database migrations:
+To initialize and manage the database via migrations:
 
 ```bash
 cd backend
@@ -127,19 +120,24 @@ The backend follows a clean, modular structure:
 ```
 backend/
 ├── app/
-│   ├── database.py      # Database connection and initialization
+│   ├── database.py      # Database connection and SQLAlchemy setup
 │   ├── main.py          # FastAPI application and routes
 │   ├── models.py        # SQLAlchemy models
-│   └── scraper.py       # Content scraping functionality with Trafilatura
+│   ├── scraper.py       # Content scraping functionality with Trafilatura
+│   └── reddit_scraper.py # Reddit content discovery scraper
 ├── migrations/          # Database migrations (yoyo-migrations)
-│   └── *.sql           # SQL migration files
+│   ├── 001_initial_schema.sql           # Initial database schema
+│   ├── 001_initial_schema_rollback.sql
+│   ├── 002_add_embeddings.sql           # Embeddings table (standard SQL)
+│   ├── 002_add_embeddings_rollback.sql
+│   └── 003_create_vector_table.py       # Vector table with sqlite-vec extension
 ├── tests/
-│   ├── test_scraper.py  # Comprehensive scraper tests
+│   ├── test_scraper.py         # Comprehensive scraper tests
+│   ├── test_reddit_scraper.py  # Reddit scraper tests
 │   └── __init__.py
 ├── data/
 │   └── links.json       # URLs to scrape
-├── yoyo.ini            # Migration configuration
-└── init_db.py          # Database initialization script
+└── yoyo.ini            # Migration configuration
 ```
 
 1. **Data Collection**:

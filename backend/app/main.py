@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.database import get_db, init_database
+from app.database import get_db
 
 # API Key configuration
 API_KEY = os.getenv("API_KEY", "gem-search-dev-key-12345")
@@ -48,13 +48,8 @@ app.add_middleware(
 )
 
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialize database on startup."""
-    try:
-        init_database()
-    except Exception as e:
-        print(f"Failed to initialize database: {e}")
+# Database is initialized via migrations (yoyo apply)
+# No need for startup initialization
 
 
 @app.post("/search", response_model=list[SearchResult])
