@@ -3,23 +3,23 @@ Create vector table with sqlite-vec extension.
 This migration loads the sqlite-vec extension and creates the virtual table.
 """
 
-from yoyo import step
 import sqlite_vec
+from yoyo import step
 
 
 def apply_vector_table(conn):
     """Apply: Create vector table with sqlite-vec extension."""
     # Enable extension loading
     conn.enable_load_extension(True)
-    
+
     # Load sqlite-vec extension
     sqlite_vec.load(conn)
-    
+
     # Disable extension loading for security
     conn.enable_load_extension(False)
-    
+
     cursor = conn.cursor()
-    
+
     # Create vector virtual table
     cursor.execute("""
         CREATE VIRTUAL TABLE IF NOT EXISTS document_vectors USING vec0(
@@ -27,7 +27,7 @@ def apply_vector_table(conn):
             document_id INTEGER
         )
     """)
-    
+
     conn.commit()
 
 
