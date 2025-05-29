@@ -1,8 +1,6 @@
 -- Add vector embeddings support
 -- Create embeddings table and vector index using sqlite-vec
-
--- Load sqlite-vec extension
-.load sqlite_vec
+-- Note: sqlite-vec extension must be loaded by the application
 
 -- Create embeddings table to store document vectors
 CREATE TABLE IF NOT EXISTS document_embeddings (
@@ -20,9 +18,10 @@ ON document_embeddings(document_id, embedding_model);
 
 -- Create vector index for similarity search using sqlite-vec
 -- Using 1024 dimensions for future embedding model
-CREATE VIRTUAL TABLE IF NOT EXISTS document_vectors USING vec0(
-    embedding float[1024],
-    document_id INTEGER
-);
+-- NOTE: This virtual table requires sqlite-vec extension to be loaded
+-- CREATE VIRTUAL TABLE IF NOT EXISTS document_vectors USING vec0(
+--     embedding float[1024],
+--     document_id INTEGER
+-- );
 
 -- step: 002_add_embeddings
