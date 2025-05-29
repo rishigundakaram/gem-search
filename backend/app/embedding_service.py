@@ -4,6 +4,7 @@ Provides text embedding functionality for search queries.
 """
 
 import logging
+import os
 
 import torch
 from transformers import AutoModel, AutoTokenizer
@@ -40,8 +41,19 @@ class EmbeddingService:
         """Load the model and tokenizer."""
         try:
             logger.info(f"Loading Jina CLIP v2 model: {self.model_name}")
-            self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, trust_remote_code=True)
-            self.model = AutoModel.from_pretrained(self.model_name, trust_remote_code=True)
+            # Use local_files_only=True if offline mode is set (for CI)
+            offline_mode = os.getenv("HF_HUB_OFFLINE", "0") == "1"
+            
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                self.model_name, 
+                trust_remote_code=True,
+                local_files_only=offline_mode
+            )
+            self.model = AutoModel.from_pretrained(
+                self.model_name, 
+                trust_remote_code=True,
+                local_files_only=offline_mode
+            )
             self.model.to(self.device)
             self.model.eval()
             logger.info(f"Model loaded successfully on device: {self.device}")

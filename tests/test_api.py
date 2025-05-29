@@ -90,6 +90,23 @@ def test_api_endpoints():
             print(f"✗ Authentication should fail but got: {response.status_code}")
             return False
 
+        # Test embedding endpoint - only basic availability, not functionality
+        # (skip actual embedding to avoid model downloads in CI)
+        print("Testing embedding endpoint availability...")
+        response = requests.post(
+            f"{base_url}/embed",
+            json={"text": "test"},
+            headers={"X-API-Key": "gem-search-dev-key-12345"},
+            timeout=10,
+        )
+        # Expect 500 (model not available) or 200 (if model loads), but not 404/401
+        if response.status_code in [200, 500]:
+            print("✓ Embedding endpoint available (model may not load in CI)")
+        else:
+            print(f"✗ Embedding endpoint unexpected status: {response.status_code}")
+            print(f"Response: {response.text}")
+            return False
+
         return True
 
     except requests.exceptions.ConnectionError:
