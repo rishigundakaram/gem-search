@@ -8,6 +8,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.embedding_service import get_embedding_service
 
 # API Key configuration
 API_KEY = os.getenv("API_KEY", "gem-search-dev-key-12345")
@@ -27,6 +28,14 @@ class SearchQuery(BaseModel):
 class SearchResult(BaseModel):
     title: str
     url: str
+
+
+class EmbedQuery(BaseModel):
+    text: str
+
+
+class EmbedResponse(BaseModel):
+    embedding: list[float]
 
 
 # Initialize the FastAPI application
@@ -84,6 +93,23 @@ async def search(
     except Exception as e:
         print(f"Search error: {e}")
         raise HTTPException(status_code=500, detail=f"Search error: {str(e)}") from e
+
+
+@app.post("/embed", response_model=EmbedResponse)
+async def embed_text(embed_query: EmbedQuery, api_key: str = Depends(verify_api_key)):
+    """Generate text embedding using Jina CLIP v2 model."""
+    text = embed_query.text.strip()
+
+    if not text:
+        raise HTTPException(status_code=400, detail="Text cannot be empty")
+
+    try:
+        embedding_service = get_embedding_service()
+        embedding = embedding_service.embed_text(text)
+        return {"embedding": embedding}
+    except Exception as e:
+        print(f"Embedding error: {e}")
+        raise HTTPException(status_code=500, detail=f"Embedding error: {str(e)}") from e
 
 
 @app.get("/health")

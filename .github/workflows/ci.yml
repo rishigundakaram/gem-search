@@ -37,10 +37,16 @@ jobs:
       with:
         path: .venv
         key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: |
+          venv-${{ runner.os }}-${{ matrix.python-version }}-
 
     - name: Install dependencies
       if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-      run: poetry install --no-interaction --no-root
+      run: |
+        poetry config installer.max-workers 10
+        # Install CPU-only PyTorch for faster CI
+        pip install torch --index-url https://download.pytorch.org/whl/cpu --upgrade
+        poetry install --no-interaction --no-root
 
     - name: Initialize database
       run: |
@@ -48,7 +54,11 @@ jobs:
         poetry run yoyo apply --batch
 
     - name: Run backend unit tests
-      run: poetry run pytest backend/tests/ -v --cov=backend --cov-report=xml
+      env:
+        HF_HUB_OFFLINE: "1"
+        TRANSFORMERS_OFFLINE: "1"
+        TORCH_HOME: /tmp/torch
+      run: poetry run pytest backend/tests/ -v --cov=backend --cov-report=xml -m "not integration"
 
     - name: Run integration tests
       run: poetry run pytest tests/ -v
@@ -114,10 +124,16 @@ jobs:
       with:
         path: .venv
         key: venv-${{ runner.os }}-3.11-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: |
+          venv-${{ runner.os }}-3.11-
 
     - name: Install dependencies
       if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-      run: poetry install --no-interaction --no-root
+      run: |
+        poetry config installer.max-workers 10
+        # Install CPU-only PyTorch for faster CI
+        pip install torch --index-url https://download.pytorch.org/whl/cpu --upgrade
+        poetry install --no-interaction --no-root
 
     - name: Run ruff linting
       run: poetry run ruff check backend/ tests/
@@ -147,7 +163,11 @@ jobs:
         virtualenvs-in-project: true
 
     - name: Install dependencies
-      run: poetry install --no-interaction --no-root
+      run: |
+        poetry config installer.max-workers 10
+        # Install CPU-only PyTorch for faster CI
+        pip install torch --index-url https://download.pytorch.org/whl/cpu --upgrade
+        poetry install --no-interaction --no-root
 
     - name: Initialize database
       run: |
@@ -155,10 +175,14 @@ jobs:
         poetry run yoyo apply --batch
 
     - name: Start backend server
+      env:
+        HF_HUB_OFFLINE: "1"
+        TRANSFORMERS_OFFLINE: "1"
+        TORCH_HOME: /tmp/torch
       run: |
         cd backend
         poetry run uvicorn app.main:app --host 127.0.0.1 --port 8000 &
-        sleep 5
+        sleep 10
 
     - name: Run API integration tests
       run: poetry run pytest tests/test_api.py -v
