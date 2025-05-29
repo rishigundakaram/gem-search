@@ -45,7 +45,7 @@ jobs:
     - name: Initialize database
       run: |
         cd backend
-        poetry run python init_db.py
+        poetry run yoyo apply --batch
 
     - name: Run backend unit tests
       run: poetry run pytest backend/tests/ -v --cov=backend --cov-report=xml
@@ -152,7 +152,7 @@ jobs:
     - name: Initialize database
       run: |
         cd backend
-        poetry run python init_db.py
+        poetry run yoyo apply --batch
 
     - name: Start backend server
       run: |

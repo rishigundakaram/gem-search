@@ -9,7 +9,7 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///search.db")
+DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///./search.db")
 
 # Create SQLAlchemy engine
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})  # Needed for SQLite

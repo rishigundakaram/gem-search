@@ -5,9 +5,9 @@ Simple backend functionality test.
 import os
 import sys
 
-# Add search directory to path
-search_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "search")
-sys.path.insert(0, search_dir)
+# Add backend directory to path
+backend_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "backend")
+sys.path.insert(0, backend_dir)
 
 
 def test_imports():
@@ -23,8 +23,8 @@ def test_imports():
 def test_database():
     """Test database connection setup."""
     try:
-        from app.database import get_db, engine
-        
+        from app.database import engine, get_db
+
         # Test that we can create the engine and get a session
         assert engine is not None
         db_gen = get_db()
