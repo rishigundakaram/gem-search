@@ -21,16 +21,16 @@ def test_imports():
 
 
 def test_database():
-    """Test database initialization."""
+    """Test database connection setup."""
     try:
-        from app.database import init_database
-
-        conn = init_database("test_search.db")
-        conn.close()
-        print("✓ Database initialization successful")
-
-        # Clean up test database
-        os.remove("test_search.db")
+        from app.database import get_db, engine
+        
+        # Test that we can create the engine and get a session
+        assert engine is not None
+        db_gen = get_db()
+        db = next(db_gen)
+        db.close()
+        print("✓ Database connection setup successful")
         return True
     except Exception as e:
         print(f"✗ Database test failed: {e}")
