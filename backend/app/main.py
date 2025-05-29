@@ -96,9 +96,7 @@ async def search(
 
 
 @app.post("/embed", response_model=EmbedResponse)
-async def embed_text(
-    embed_query: EmbedQuery, api_key: str = Depends(verify_api_key)
-):
+async def embed_text(embed_query: EmbedQuery, api_key: str = Depends(verify_api_key)):
     """Generate text embedding using Jina CLIP v2 model."""
     text = embed_query.text.strip()
 

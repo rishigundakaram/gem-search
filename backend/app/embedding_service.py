@@ -11,6 +11,7 @@ from transformers import AutoModel, AutoTokenizer
 
 logger = logging.getLogger(__name__)
 
+
 class EmbeddingService:
     """Service for generating text embeddings using Jina CLIP v2 model."""
 
@@ -45,14 +46,10 @@ class EmbeddingService:
             offline_mode = os.getenv("HF_HUB_OFFLINE", "0") == "1"
 
             self.tokenizer = AutoTokenizer.from_pretrained(
-                self.model_name,
-                trust_remote_code=True,
-                local_files_only=offline_mode
+                self.model_name, trust_remote_code=True, local_files_only=offline_mode
             )
             self.model = AutoModel.from_pretrained(
-                self.model_name,
-                trust_remote_code=True,
-                local_files_only=offline_mode
+                self.model_name, trust_remote_code=True, local_files_only=offline_mode
             )
             self.model.to(self.device)
             self.model.eval()
@@ -90,11 +87,7 @@ class EmbeddingService:
             with torch.no_grad():
                 # Tokenize texts
                 inputs = self.tokenizer(
-                    texts,
-                    padding=True,
-                    truncation=True,
-                    return_tensors="pt",
-                    max_length=512
+                    texts, padding=True, truncation=True, return_tensors="pt", max_length=512
                 ).to(self.device)
 
                 # Generate embeddings
@@ -110,8 +103,10 @@ class EmbeddingService:
             logger.error(f"Failed to generate embeddings: {e}")
             raise
 
+
 # Global instance (lazy initialization)
 _embedding_service: EmbeddingService | None = None
+
 
 def get_embedding_service() -> EmbeddingService:
     """Get or create the global embedding service instance."""
