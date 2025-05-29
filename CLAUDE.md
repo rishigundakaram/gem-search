@@ -282,6 +282,111 @@ poetry run pytest tests/ -v
 ### Emergency Override:
 If you must bypass checks for urgent fixes, document why in the commit message and create an immediate follow-up PR to fix the issues.
 
+## Type Hinting Requirements
+
+**ALL functions must have complete type annotations**
+
+### Required Type Annotations:
+```python
+# ✅ Good - All parameters and return types annotated
+def process_data(items: list[str], threshold: int = 10) -> ProcessResult:
+    return ProcessResult(processed=items, count=len(items))
+
+# ❌ Bad - Missing type annotations
+def process_data(items, threshold=10):
+    return {"processed": items, "count": len(items)}
+```
+
+### Complex Return Types - Create Classes:
+When return types become complex (multiple values, nested structures), create dedicated classes:
+
+```python
+from dataclasses import dataclass
+from typing import Any
+
+# ❌ Bad - Complex tuple return type
+def analyze_content(text: str) -> tuple[str | None, str | None, int, dict[str, Any]]:
+    return title, summary, word_count, metadata
+
+# ✅ Good - Dedicated class for complex return
+@dataclass
+class ContentAnalysis:
+    title: str | None
+    summary: str | None
+    word_count: int
+    metadata: dict[str, Any]
+
+def analyze_content(text: str) -> ContentAnalysis:
+    return ContentAnalysis(
+        title=title,
+        summary=summary, 
+        word_count=word_count,
+        metadata=metadata
+    )
+```
+
+### Type Annotation Guidelines:
+
+1. **Use Modern Python Syntax** (Python 3.10+):
+   - `list[str]` instead of `List[str]`
+   - `dict[str, int]` instead of `Dict[str, int]`
+   - `str | None` instead of `Optional[str]`
+
+2. **Be Specific with Collections**:
+   ```python
+   # ✅ Specific
+   def get_user_ids() -> set[int]:
+   def parse_config() -> dict[str, str | int]:
+   
+   # ❌ Too generic  
+   def get_user_ids() -> set:
+   def parse_config() -> dict:
+   ```
+
+3. **Create Classes for Complex Structures**:
+   ```python
+   from dataclasses import dataclass
+   
+   # When you have 3+ return values or nested data:
+   @dataclass 
+   class ScrapingResult:
+       urls_found: int
+       documents_created: int
+       errors: list[str]
+       next_page_token: str | None = None
+   ```
+
+4. **Handle External Libraries**:
+   ```python
+   from typing import TYPE_CHECKING
+   
+   if TYPE_CHECKING:
+       from requests import Response
+       from sqlalchemy.orm import Session
+   ```
+
+5. **Use Type Aliases for Complex Types**:
+   ```python
+   # For frequently used complex types
+   URLMapping = dict[str, tuple[str, int]]
+   ConfigDict = dict[str, str | int | bool]
+   
+   def process_urls(mapping: URLMapping) -> ConfigDict:
+       pass
+   ```
+
+### When to Create New Classes:
+
+- **3+ return values**: Always use a class instead of tuple
+- **Nested dictionaries**: Create structured classes
+- **API responses**: Define response models
+- **Configuration objects**: Use dataclasses or Pydantic models
+
+### MyPy Integration:
+- All code must pass `poetry run mypy backend/` with zero errors
+- Use `# type: ignore[error-code]` sparingly and only with comments explaining why
+- Add missing type stubs when needed: `poetry add types-library-name --group dev`
+
 ## Testing Requirements
 
 **CRITICAL: Always run tests before submitting code to the user**
