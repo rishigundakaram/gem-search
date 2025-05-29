@@ -128,8 +128,9 @@ backend/
 ├── migrations/          # Database migrations (yoyo-migrations)
 │   ├── 001_initial_schema.sql           # Initial database schema
 │   ├── 001_initial_schema_rollback.sql
-│   ├── 002_add_embeddings.sql           # Vector embeddings support
-│   └── 002_add_embeddings_rollback.sql
+│   ├── 002_add_embeddings.sql           # Embeddings table (standard SQL)
+│   ├── 002_add_embeddings_rollback.sql
+│   └── 003_create_vector_table.py       # Vector table with sqlite-vec extension
 ├── tests/
 │   ├── test_scraper.py         # Comprehensive scraper tests
 │   ├── test_reddit_scraper.py  # Reddit scraper tests

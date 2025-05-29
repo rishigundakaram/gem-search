@@ -16,12 +16,7 @@ CREATE TABLE IF NOT EXISTS document_embeddings (
 CREATE UNIQUE INDEX IF NOT EXISTS idx_document_embeddings_doc_model 
 ON document_embeddings(document_id, embedding_model);
 
--- Create vector index for similarity search using sqlite-vec
--- Using 1024 dimensions for future embedding model
--- NOTE: This virtual table requires sqlite-vec extension to be loaded
--- CREATE VIRTUAL TABLE IF NOT EXISTS document_vectors USING vec0(
---     embedding float[1024],
---     document_id INTEGER
--- );
+-- Vector table creation moved to 003_create_vector_table.py
+-- This allows proper extension loading before table creation
 
 -- step: 002_add_embeddings
