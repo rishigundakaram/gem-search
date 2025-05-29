@@ -4,7 +4,7 @@ from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
 
 
-class Document(Base):
+class Document(Base):  # type: ignore[misc,valid-type]
     __tablename__ = "documents"
 
     id = Column(Integer, primary_key=True)
@@ -12,7 +12,7 @@ class Document(Base):
     title = Column(String)
     content = Column(Text)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<Document(title='{self.title}', url='{self.url}')>"
 
 

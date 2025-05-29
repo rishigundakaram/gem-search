@@ -242,6 +242,46 @@ The project uses GitHub Actions for continuous integration:
 1. Do not include any demo code, examples, or unused code in the final PR. It's really important to keep
    PRs non-bloated and crisp because otherwise they're hard to review.
 
+## ⚠️ CRITICAL: CI/CD Compliance Requirements
+
+**NEVER PUSH CODE THAT FAILS CI/CD CHECKS**
+
+Before pushing any code changes, you MUST ensure all CI/CD checks pass locally:
+
+### Required Checks (ALL must pass):
+```bash
+# 1. Linting
+poetry run ruff check backend/ tests/
+
+# 2. Code formatting 
+poetry run black --check backend/ tests/
+
+# 3. Type checking
+poetry run mypy backend/
+
+# 4. Unit tests
+poetry run pytest backend/tests/ -v
+
+# 5. Integration tests
+poetry run pytest tests/ -v
+```
+
+### 🚫 NEVER:
+- Push code with failing tests
+- Push code with type errors
+- Push code with linting violations
+- Push code with formatting issues
+- Bypass pre-push hooks with `--no-verify` unless fixing the hook itself
+
+### ✅ ALWAYS:
+- Run all checks locally before pushing
+- Fix ALL issues before pushing
+- Use the pre-push hook - it prevents CI/CD failures
+- If pre-push hook fails, fix the issues instead of bypassing
+
+### Emergency Override:
+If you must bypass checks for urgent fixes, document why in the commit message and create an immediate follow-up PR to fix the issues.
+
 ## Testing Requirements
 
 **CRITICAL: Always run tests before submitting code to the user**

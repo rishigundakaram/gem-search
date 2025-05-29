@@ -19,7 +19,7 @@ from app.scraper import discover_links, fetch_and_parse, scrape_links_to_databas
 class TestTrafilaturaIntegration:
     """Test the Trafilatura integration for improved text extraction."""
 
-    def test_fetch_and_parse_with_valid_html(self):
+    def test_fetch_and_parse_with_valid_html(self) -> None:
         """Test that fetch_and_parse works with valid HTML content."""
         mock_html = """
         <html>
@@ -53,11 +53,12 @@ class TestTrafilaturaIntegration:
             title, content = fetch_and_parse("https://example.com/test")
 
             assert title == "Test Article"
+            assert content is not None
             assert "main content of the article" in content
             assert "footer content" not in content
             assert len(content) > 50
 
-    def test_fetch_and_parse_fallback_to_newspaper(self):
+    def test_fetch_and_parse_fallback_to_newspaper(self) -> None:
         """Test that the function falls back to newspaper3k when Trafilatura fails."""
         with (
             patch("trafilatura.fetch_url") as mock_fetch,
@@ -78,7 +79,7 @@ class TestTrafilaturaIntegration:
             assert title == "Newspaper Article"
             assert content == "This is content extracted by newspaper3k fallback mechanism."
 
-    def test_fetch_and_parse_plain_text_fallback(self):
+    def test_fetch_and_parse_plain_text_fallback(self) -> None:
         """Test that the function handles plain text files as final fallback."""
         with (
             patch("trafilatura.fetch_url") as mock_trafilatura_fetch,
@@ -107,7 +108,7 @@ class TestTrafilaturaIntegration:
                 == "This is plain text content that should be extracted directly from the response."
             )
 
-    def test_fetch_and_parse_invalid_content(self):
+    def test_fetch_and_parse_invalid_content(self) -> None:
         """Test that the function returns None for invalid or empty content."""
         with (
             patch("trafilatura.fetch_url") as mock_fetch,
@@ -122,7 +123,7 @@ class TestTrafilaturaIntegration:
             assert title is None
             assert content is None
 
-    def test_fetch_and_parse_content_too_short(self):
+    def test_fetch_and_parse_content_too_short(self) -> None:
         """Test that content shorter than 50 characters is rejected."""
         with (
             patch("trafilatura.fetch_url") as mock_fetch,
@@ -141,7 +142,7 @@ class TestTrafilaturaIntegration:
 class TestScrapingWorkflow:
     """Test the complete scraping workflow with database integration."""
 
-    def setup_method(self):
+    def setup_method(self) -> None:
         """Set up a temporary database for testing."""
         self.temp_db = tempfile.NamedTemporaryFile(delete=False, suffix=".db")
         self.temp_db.close()
@@ -177,12 +178,12 @@ class TestScrapingWorkflow:
         conn.commit()
         conn.close()
 
-    def teardown_method(self):
+    def teardown_method(self) -> None:
         """Clean up the temporary database."""
         if os.path.exists(self.db_path):
             os.unlink(self.db_path)
 
-    def test_scrape_links_to_database_success(self):
+    def test_scrape_links_to_database_success(self) -> None:
         """Test successful scraping and storage to database."""
         # Create a temporary links file
         temp_links = tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".json")
@@ -225,7 +226,7 @@ class TestScrapingWorkflow:
         finally:
             os.unlink(temp_links.name)
 
-    def test_scrape_links_duplicate_handling(self):
+    def test_scrape_links_duplicate_handling(self) -> None:
         """Test that duplicate URLs are not added to the database."""
         # First, add a document
         conn = sqlite3.connect(self.db_path)
@@ -265,7 +266,7 @@ class TestScrapingWorkflow:
 class TestLinkDiscovery:
     """Test the link discovery functionality."""
 
-    def test_discover_links_same_domain(self):
+    def test_discover_links_same_domain(self) -> None:
         """Test link discovery within the same domain."""
         mock_html = """
         <html>
@@ -297,7 +298,7 @@ class TestLinkDiscovery:
 
             assert discovered == expected_urls
 
-    def test_discover_links_cross_domain(self):
+    def test_discover_links_cross_domain(self) -> None:
         """Test link discovery across domains."""
         mock_html = """
         <html>
@@ -327,7 +328,7 @@ class TestRealWebsiteExtraction:
     """Integration tests with real websites (can be skipped in CI)."""
 
     @pytest.mark.skip(reason="Integration test - requires internet connection")
-    def test_extract_from_real_website(self):
+    def test_extract_from_real_website(self) -> None:
         """Test extraction from a real website."""
         # Test with a stable, simple website
         title, content = fetch_and_parse("https://httpbin.org/html")

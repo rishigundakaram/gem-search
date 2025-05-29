@@ -24,7 +24,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 DEFAULT_USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
 
 
-def fetch_and_parse(url):
+def fetch_and_parse(url: str) -> tuple[str | None, str | None]:
     """
     Fetch and parse content from a URL using Trafilatura for superior text extraction.
 
@@ -103,7 +103,7 @@ def fetch_and_parse(url):
     return None, None
 
 
-def scrape_links_to_database(links_file, db_path):
+def scrape_links_to_database(links_file: str, db_path: str) -> int:
     """
     Scrape links from JSON file and store in database.
 
@@ -158,7 +158,7 @@ def scrape_links_to_database(links_file, db_path):
     return new_count
 
 
-def discover_links(url, same_domain_only=True):
+def discover_links(url: str, same_domain_only: bool = True) -> set[str]:
     """
     Discover links from a given URL using BeautifulSoup.
 
@@ -180,7 +180,10 @@ def discover_links(url, same_domain_only=True):
         base_domain = urlparse(url).netloc
 
         for link in soup.find_all("a", href=True):
-            href = link["href"]
+            href_attr = link.get("href")
+            if href_attr is None:
+                continue
+            href = str(href_attr)
 
             # Convert relative URLs to absolute
             absolute_url = urljoin(url, href)
@@ -216,7 +219,7 @@ def discover_links(url, same_domain_only=True):
     return discovered_urls
 
 
-def get_existing_urls(db_path):
+def get_existing_urls(db_path: str) -> set[str]:
     """
     Get all existing URLs from the database.
 
@@ -234,7 +237,9 @@ def get_existing_urls(db_path):
     return existing_urls
 
 
-def insert_document_if_new(url, title, content, db_path, existing_urls):
+def insert_document_if_new(
+    url: str, title: str, content: str, db_path: str, existing_urls: set[str]
+) -> bool:
     """
     Insert a document into the database if it's new.
 
@@ -300,7 +305,9 @@ def insert_document_if_new(url, title, content, db_path, existing_urls):
     return False
 
 
-def scrape_with_discovery(links_file, db_path, discover_depth=1, allow_cross_domain=False):
+def scrape_with_discovery(
+    links_file: str, db_path: str, discover_depth: int = 1, allow_cross_domain: bool = False
+) -> tuple[int, int]:
     """
     Scrape links with automated link discovery.
 
@@ -377,7 +384,9 @@ def scrape_with_discovery(links_file, db_path, discover_depth=1, allow_cross_dom
     return new_documents_count, len(all_discovered_urls)
 
 
-async def fetch_and_parse_async(session, url, semaphore):
+async def fetch_and_parse_async(
+    session: aiohttp.ClientSession, url: str, semaphore: asyncio.Semaphore
+) -> tuple[str, str | None, str | None]:
     """
     Async version of fetch_and_parse using aiohttp.
 
@@ -412,7 +421,7 @@ async def fetch_and_parse_async(session, url, semaphore):
             return url, None, None
 
 
-def extract_content_with_trafilatura(html_content, url):
+def extract_content_with_trafilatura(html_content: str, url: str) -> tuple[str | None, str | None]:
     """
     Helper function to extract content using trafilatura (CPU-bound).
 
@@ -455,7 +464,12 @@ def extract_content_with_trafilatura(html_content, url):
         return None, None
 
 
-async def discover_links_async(session, url, semaphore, same_domain_only=True):
+async def discover_links_async(
+    session: aiohttp.ClientSession,
+    url: str,
+    semaphore: asyncio.Semaphore,
+    same_domain_only: bool = True,
+) -> set[str]:
     """
     Async version of discover_links.
 
@@ -469,7 +483,7 @@ async def discover_links_async(session, url, semaphore, same_domain_only=True):
         set: Set of discovered URLs
     """
     async with semaphore:
-        discovered_urls = set()
+        discovered_urls: set[str] = set()
 
         try:
             headers = {"User-Agent": DEFAULT_USER_AGENT}
@@ -493,7 +507,9 @@ async def discover_links_async(session, url, semaphore, same_domain_only=True):
         return discovered_urls
 
 
-def parse_links_from_html(html_content, base_url, same_domain_only=True):
+def parse_links_from_html(
+    html_content: str, base_url: str, same_domain_only: bool = True
+) -> set[str]:
     """
     Helper function to parse links from HTML (CPU-bound).
 
@@ -512,7 +528,10 @@ def parse_links_from_html(html_content, base_url, same_domain_only=True):
         base_domain = urlparse(base_url).netloc
 
         for link in soup.find_all("a", href=True):
-            href = link["href"]
+            href_attr = link.get("href")
+            if href_attr is None:
+                continue
+            href = str(href_attr)
 
             # Convert relative URLs to absolute
             absolute_url = urljoin(base_url, href)
@@ -541,7 +560,9 @@ def parse_links_from_html(html_content, base_url, same_domain_only=True):
     return discovered_urls
 
 
-def insert_document_batch(documents, db_path, existing_urls):
+def insert_document_batch(
+    documents: list[tuple[str, str, str]], db_path: str, existing_urls: set[str]
+) -> int:
     """
     Insert multiple documents into database in a single transaction.
 
@@ -618,7 +639,9 @@ def insert_document_batch(documents, db_path, existing_urls):
     return inserted_count
 
 
-async def scrape_urls_concurrent(urls, db_path, max_concurrent=20, batch_size=50):
+async def scrape_urls_concurrent(
+    urls: list[str], db_path: str, max_concurrent: int = 20, batch_size: int = 50
+) -> tuple[int, int]:
     """
     Scrape multiple URLs concurrently using asyncio.
 
@@ -701,8 +724,12 @@ async def scrape_urls_concurrent(urls, db_path, max_concurrent=20, batch_size=50
 
 
 async def scrape_with_discovery_concurrent(
-    links_file, db_path, discover_depth=1, allow_cross_domain=False, max_concurrent=20
-):
+    links_file: str,
+    db_path: str,
+    discover_depth: int = 1,
+    allow_cross_domain: bool = False,
+    max_concurrent: int = 20,
+) -> tuple[int, int]:
     """
     Async version of scrape_with_discovery with concurrent processing.
 

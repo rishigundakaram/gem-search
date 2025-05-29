@@ -27,7 +27,7 @@ from app.reddit_scraper import (
 class TestRedditAPI:
     """Test Reddit API interaction functions."""
 
-    def test_get_random_sort_and_time(self):
+    def test_get_random_sort_and_time(self) -> None:
         """Test that random sort and time selection works."""
         sort_method, time_filter = get_random_sort_and_time()
 
@@ -40,13 +40,13 @@ class TestRedditAPI:
         else:
             assert time_filter is None
 
-    def test_get_random_time_filter(self):
+    def test_get_random_time_filter(self) -> None:
         """Test random time filter generation."""
         time_filter = get_random_time_filter()
         assert time_filter in ["day", "week", "month", "year", "all"]
 
     @patch("requests.get")
-    def test_get_reddit_posts_success(self, mock_get):
+    def test_get_reddit_posts_success(self, mock_get: MagicMock) -> None:
         """Test successful Reddit API call."""
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -89,7 +89,7 @@ class TestRedditAPI:
         assert next_after == "test_token"
 
     @patch("requests.get")
-    def test_get_reddit_posts_failure(self, mock_get):
+    def test_get_reddit_posts_failure(self, mock_get: MagicMock) -> None:
         """Test Reddit API failure handling."""
         mock_get.side_effect = Exception("API Error")
 
@@ -102,7 +102,7 @@ class TestRedditAPI:
 class TestURLExtraction:
     """Test URL extraction and filtering functions."""
 
-    def test_extract_urls_from_text(self):
+    def test_extract_urls_from_text(self) -> None:
         """Test URL extraction from text."""
         text = """
         Check out these sites:
@@ -121,7 +121,7 @@ class TestURLExtraction:
 
         assert urls == expected_urls
 
-    def test_extract_urls_with_trailing_punctuation(self):
+    def test_extract_urls_with_trailing_punctuation(self) -> None:
         """Test URL extraction handles trailing punctuation."""
         text = "Visit https://example.com/page, or https://test.org/page!"
 
@@ -131,7 +131,7 @@ class TestURLExtraction:
 
         assert urls == expected_urls
 
-    def test_filter_reddit_urls(self):
+    def test_filter_reddit_urls(self) -> None:
         """Test filtering out Reddit and social media URLs."""
         urls = {
             "https://example.com/article",
@@ -149,7 +149,7 @@ class TestURLExtraction:
 
         assert filtered == expected_filtered
 
-    def test_filter_reddit_urls_edge_cases(self):
+    def test_filter_reddit_urls_edge_cases(self) -> None:
         """Test filtering handles edge cases."""
         urls = {
             "https://reddit-like.com/page",  # Should not be filtered
@@ -170,7 +170,7 @@ class TestURLExtraction:
 class TestRedditScraper:
     """Test the main Reddit scraper functionality."""
 
-    def setup_method(self):
+    def setup_method(self) -> None:
         """Set up a temporary database for testing."""
         self.temp_db = tempfile.NamedTemporaryFile(delete=False, suffix=".db")
         self.temp_db.close()
@@ -206,14 +206,16 @@ class TestRedditScraper:
         conn.commit()
         conn.close()
 
-    def teardown_method(self):
+    def teardown_method(self) -> None:
         """Clean up the temporary database."""
         if os.path.exists(self.db_path):
             os.unlink(self.db_path)
 
     @patch("app.reddit_scraper.get_reddit_posts")
     @patch("asyncio.run")
-    def test_scrape_reddit_batch_success(self, mock_asyncio_run, mock_get_posts):
+    def test_scrape_reddit_batch_success(
+        self, mock_asyncio_run: MagicMock, mock_get_posts: MagicMock
+    ) -> None:
         """Test successful Reddit batch scraping."""
         # Mock Reddit API response
         mock_posts = [
@@ -242,7 +244,7 @@ class TestRedditScraper:
         mock_asyncio_run.assert_called_once()
 
     @patch("app.reddit_scraper.get_reddit_posts")
-    def test_scrape_reddit_batch_no_posts(self, mock_get_posts):
+    def test_scrape_reddit_batch_no_posts(self, mock_get_posts: MagicMock) -> None:
         """Test handling when no Reddit posts are found."""
         mock_get_posts.return_value = ([], None)
 
@@ -254,7 +256,9 @@ class TestRedditScraper:
 
     @patch("app.reddit_scraper.get_reddit_posts")
     @patch("asyncio.run")
-    def test_scrape_reddit_batch_filters_reddit_urls(self, mock_asyncio_run, mock_get_posts):
+    def test_scrape_reddit_batch_filters_reddit_urls(
+        self, mock_asyncio_run: MagicMock, mock_get_posts: MagicMock
+    ) -> None:
         """Test that Reddit URLs are properly filtered out."""
         # Mock Reddit API response with Reddit URLs
         mock_posts = [
@@ -280,7 +284,7 @@ class TestRedditScraper:
 class TestConcurrentFeatures:
     """Test concurrent/async features."""
 
-    def setup_method(self):
+    def setup_method(self) -> None:
         """Set up test environment."""
         self.temp_db = tempfile.NamedTemporaryFile(delete=False, suffix=".db")
         self.temp_db.close()
@@ -311,12 +315,12 @@ class TestConcurrentFeatures:
         conn.commit()
         conn.close()
 
-    def teardown_method(self):
+    def teardown_method(self) -> None:
         """Clean up."""
         if os.path.exists(self.db_path):
             os.unlink(self.db_path)
 
-    def test_concurrent_configuration_constants(self):
+    def test_concurrent_configuration_constants(self) -> None:
         """Test that concurrent configuration constants are set correctly."""
         from app.reddit_scraper import DEFAULT_DELAY, DEFAULT_PAGES, DISCOVER_DEPTH, MAX_CONCURRENT
 

@@ -9,6 +9,7 @@ import re
 
 # Import from the same directory
 import time
+from typing import Any
 from urllib.parse import urlparse
 
 import requests
@@ -22,7 +23,7 @@ DEFAULT_DELAY = 2  # Delay between Reddit API calls (seconds)
 DEFAULT_PAGES = 20  # Default pages to scrape in continuous mode
 
 
-def get_random_time_filter():
+def get_random_time_filter() -> str:
     """
     Get a random time filter for discovering content from different periods.
 
@@ -34,7 +35,7 @@ def get_random_time_filter():
     return random.choices(time_options, weights=weights)[0]
 
 
-def get_random_sort_and_time():
+def get_random_sort_and_time() -> tuple[str, str | None]:
     """
     Get a random sort method and time filter for content discovery.
 
@@ -52,8 +53,12 @@ def get_random_sort_and_time():
 
 
 def get_reddit_posts(
-    subreddit="InternetIsBeautiful", limit=25, sort="hot", after=None, time_filter=None
-):
+    subreddit: str = "InternetIsBeautiful",
+    limit: int = 25,
+    sort: str = "hot",
+    after: str | None = None,
+    time_filter: str | None = None,
+) -> tuple[list[dict[str, Any]], str | None]:
     """
     Get posts from a Reddit subreddit using the JSON API with pagination.
 
@@ -73,7 +78,7 @@ def get_reddit_posts(
 
     headers = {"User-Agent": "gem-search-bot/1.0 (content discovery tool)"}
 
-    params = {"limit": min(limit, 100)}  # Reddit API limit
+    params: dict[str, Any] = {"limit": min(limit, 100)}  # Reddit API limit
 
     # Add time filter for top posts
     if sort == "top" and time_filter:
@@ -112,7 +117,7 @@ def get_reddit_posts(
         return [], None
 
 
-def extract_urls_from_text(text):
+def extract_urls_from_text(text: str) -> set[str]:
     """
     Extract URLs from text using regex.
 
@@ -143,7 +148,7 @@ def extract_urls_from_text(text):
     return urls
 
 
-def filter_reddit_urls(urls):
+def filter_reddit_urls(urls: set[str]) -> set[str]:
     """
     Filter out Reddit URLs and other unwanted domains.
 
@@ -185,7 +190,13 @@ def filter_reddit_urls(urls):
     return filtered
 
 
-def scrape_reddit_batch(subreddit, db_path, after=None, sort="hot", time_filter=None):
+def scrape_reddit_batch(
+    subreddit: str,
+    db_path: str,
+    after: str | None = None,
+    sort: str = "hot",
+    time_filter: str | None = None,
+) -> tuple[int, int, str | None]:
     """
     Scrape a batch of Reddit posts and extract websites with link discovery.
     Uses concurrent processing with optimized settings.
@@ -217,7 +228,7 @@ def scrape_reddit_batch(subreddit, db_path, after=None, sort="hot", time_filter=
 
     for post in posts:
         # Check post URL (main link)
-        if post["url"] and not post["url"].startswith("https://www.reddit.com"):
+        if post["url"] and not str(post["url"]).startswith("https://www.reddit.com"):
             all_urls.add(post["url"])
 
         # Check self text for URLs
@@ -284,7 +295,9 @@ def scrape_reddit_batch(subreddit, db_path, after=None, sort="hot", time_filter=
             pass
 
 
-def scrape_reddit_continuous(subreddit, db_path, max_pages=DEFAULT_PAGES, random_dates=True):
+def scrape_reddit_continuous(
+    subreddit: str, db_path: str, max_pages: int = DEFAULT_PAGES, random_dates: bool = True
+) -> dict[str, int]:
     """
     Continuously scrape Reddit subreddit with random date exploration.
     Always uses concurrent processing for optimal speed.

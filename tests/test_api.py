@@ -14,7 +14,7 @@ backend_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "ba
 sys.path.insert(0, backend_dir)
 
 
-def start_server():
+def start_server() -> subprocess.Popen:
     """Start the FastAPI server in the background."""
     os.chdir(backend_dir)
     return subprocess.Popen(
@@ -26,7 +26,7 @@ def start_server():
     )
 
 
-def test_api_endpoints():
+def test_api_endpoints() -> bool:
     """Test the API endpoints."""
     base_url = "http://127.0.0.1:8003"
 

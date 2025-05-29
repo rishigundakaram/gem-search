@@ -10,7 +10,7 @@ search_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "search")
 sys.path.insert(0, search_dir)
 
 
-def test_imports():
+def test_imports() -> bool:
     """Test that all modules can be imported."""
     try:
         print("✓ All imports successful")
@@ -20,7 +20,7 @@ def test_imports():
         return False
 
 
-def test_database():
+def test_database() -> bool:
     """Test database initialization."""
     try:
         from app.database import init_database
@@ -37,7 +37,7 @@ def test_database():
         return False
 
 
-def test_app_creation():
+def test_app_creation() -> bool:
     """Test FastAPI app creation."""
     try:
         from app.main import app
@@ -50,7 +50,7 @@ def test_app_creation():
         return False
 
 
-def run_tests():
+def run_tests() -> bool:
     """Run all tests."""
     print("Testing backend functionality...")
     tests = [test_imports, test_database, test_app_creation]

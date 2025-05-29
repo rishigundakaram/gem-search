@@ -5,9 +5,10 @@ Handles SQLite database setup, sessions, and FTS5 initialization.
 
 import os
 import sqlite3
+from collections.abc import Generator
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///search.db")
 
@@ -18,7 +19,7 @@ engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False}) 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
-def get_db():
+def get_db() -> Generator[Session, None, None]:
     """Get a database session."""
     db = SessionLocal()
     try:
@@ -27,7 +28,7 @@ def get_db():
         db.close()
 
 
-def init_database(db_path="search.db"):
+def init_database(db_path: str = "search.db") -> sqlite3.Connection:
     """Initialize the complete database with tables and FTS5."""
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()

@@ -13,7 +13,7 @@ from app.database import get_db, init_database
 API_KEY = os.getenv("API_KEY", "gem-search-dev-key-12345")
 
 
-def verify_api_key(x_api_key: Annotated[str, Header()]):
+def verify_api_key(x_api_key: Annotated[str, Header()]) -> str:
     if x_api_key != API_KEY:
         raise HTTPException(status_code=401, detail="Invalid API key")
     return x_api_key
@@ -49,7 +49,7 @@ app.add_middleware(
 
 
 @app.on_event("startup")
-async def startup_event():
+async def startup_event() -> None:
     """Initialize database on startup."""
     try:
         init_database()
@@ -60,7 +60,7 @@ async def startup_event():
 @app.post("/search", response_model=list[SearchResult])
 async def search(
     search_query: SearchQuery, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)
-):
+) -> list[SearchResult]:
     """Search documents using FTS5."""
     query = search_query.query.strip()
 
@@ -84,7 +84,7 @@ async def search(
             {"query": query},
         ).fetchall()
 
-        results = [{"title": row[0], "url": row[1]} for row in result]
+        results = [SearchResult(title=row[0], url=row[1]) for row in result]
         return results
     except Exception as e:
         print(f"Search error: {e}")
@@ -92,6 +92,6 @@ async def search(
 
 
 @app.get("/health")
-async def health_check():
+async def health_check() -> dict[str, str]:
     """Health check endpoint."""
     return {"status": "ok"}
