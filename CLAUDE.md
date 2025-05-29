@@ -103,11 +103,11 @@ This script performs all CI/CD checks locally:
 
 The script ensures your code will pass CI/CD before pushing, saving time and preventing failed builds.
 
-### Pre-Commit Hook
+### Pre-Push Hook
 
-A pre-commit hook is automatically installed that runs all CI/CD checks locally before allowing commits. If checks fail, you'll be prompted to either fix the issues or commit anyway.
+A pre-push hook is automatically installed that runs all CI/CD checks locally before allowing pushes. If checks fail, you'll be prompted to either fix the issues or push anyway.
 
-The pre-commit hook runs:
+The pre-push hook runs:
 - ✅ Ruff linting and code quality checks
 - ✅ Black code formatting verification
 - ✅ MyPy type checking
@@ -115,7 +115,7 @@ The pre-commit hook runs:
 - ✅ Integration tests
 - ✅ Frontend tests and build verification (if applicable)
 
-If any checks fail, you'll see helpful tips for fixing issues and be asked if you want to commit anyway. This prevents pushing code that would fail CI/CD.
+If any checks fail, you'll see helpful tips for fixing issues and be asked if you want to push anyway. This prevents pushing code that would fail CI/CD.
 
 ### Frontend (React/TypeScript)
 
