@@ -21,12 +21,14 @@ def apply_vector_table(conn):
     cursor = conn.cursor()
 
     # Create vector virtual table
-    cursor.execute("""
+    cursor.execute(
+        """
         CREATE VIRTUAL TABLE IF NOT EXISTS document_vectors USING vec0(
             embedding float[1024],
             document_id INTEGER
         )
-    """)
+    """
+    )
 
     conn.commit()
 
@@ -39,6 +41,4 @@ def rollback_vector_table(conn):
 
 
 # Define the migration step
-steps = [
-    step(apply_vector_table, rollback_vector_table)
-]
+steps = [step(apply_vector_table, rollback_vector_table)]
