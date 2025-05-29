@@ -31,6 +31,7 @@ ruff = "^0.1.0"
 black = "^24.3.0"
 safety = "^2.3.0"
 bandit = "^1.7.0"
+mypy = "^1.5.0"
 
 [tool.pytest.ini_options]
 testpaths = ["backend/tests", "tests"]
@@ -70,6 +71,33 @@ ignore = [
 target-version = ['py311']
 include = '\.pyi?$'
 line-length = 100
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = [
+    "newspaper",
+    "newspaper.*",
+    "trafilatura",
+    "trafilatura.*",
+    "yoyo",
+    "yoyo.*"
+]
+ignore_missing_imports = true
 
 [build-system]
 requires = ["poetry-core"]

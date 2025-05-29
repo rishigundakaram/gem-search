@@ -71,6 +71,9 @@ poetry run ruff check backend/ --fix
 # Format code with Black
 poetry run black backend/
 
+# Run type checking with MyPy
+poetry run mypy backend/
+
 # Run tests to ensure nothing is broken
 cd backend && poetry run pytest tests/ -v
 ```
@@ -92,6 +95,20 @@ This script performs all CI/CD checks locally:
 - 🚀 Provides clear feedback and helpful tips for fixing issues
 
 The script ensures your code will pass CI/CD before pushing, saving time and preventing failed builds.
+
+### Pre-Commit Hook
+
+A pre-commit hook is automatically installed that runs all CI/CD checks locally before allowing commits. If checks fail, you'll be prompted to either fix the issues or commit anyway.
+
+The pre-commit hook runs:
+- ✅ Ruff linting and code quality checks
+- ✅ Black code formatting verification
+- ✅ MyPy type checking
+- ✅ Backend unit tests with coverage
+- ✅ Integration tests
+- ✅ Frontend tests and build verification (if applicable)
+
+If any checks fail, you'll see helpful tips for fixing issues and be asked if you want to commit anyway. This prevents pushing code that would fail CI/CD.
 
 ### Frontend (React/TypeScript)
 
@@ -215,6 +232,7 @@ The project uses GitHub Actions for continuous integration:
 - **Backend Tests**: Python 3.11/3.12 with pytest, coverage reporting
 - **Frontend Tests**: Node.js with npm test and build verification
 - **Linting**: Ruff and Black for Python code quality
+- **Type Checking**: MyPy for static type analysis
 - **Integration**: Full API testing with both services running
 
 ## Development notes

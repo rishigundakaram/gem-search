@@ -71,7 +71,19 @@ else
 fi
 echo ""
 
-# 3. Backend Tests
+# 3. Type Checking
+print_status "Running MyPy type checking..."
+if poetry run mypy backend/; then
+    print_success "MyPy type checking passed"
+else
+    print_error "MyPy type checking failed. Fix type errors before pushing."
+    echo ""
+    echo "💡 Tip: Add type annotations or # type: ignore comments for untyped code"
+    exit 1
+fi
+echo ""
+
+# 4. Backend Tests
 print_status "Running backend tests..."
 if poetry run pytest backend/tests/ -v --tb=short; then
     print_success "Backend tests passed"
@@ -81,7 +93,7 @@ else
 fi
 echo ""
 
-# 4. Integration Tests (optional - skip if not available)
+# 5. Integration Tests (optional - skip if not available)
 if [ -f "tests/test_api.py" ]; then
     print_status "Running integration tests..."
     if poetry run pytest tests/ -v --tb=short; then
@@ -94,7 +106,7 @@ if [ -f "tests/test_api.py" ]; then
     echo ""
 fi
 
-# 5. Frontend Tests (if frontend exists and has package.json)
+# 6. Frontend Tests (if frontend exists and has package.json)
 if [ -f "frontend/package.json" ]; then
     print_status "Running frontend tests..."
     cd frontend
@@ -109,7 +121,7 @@ if [ -f "frontend/package.json" ]; then
     echo ""
 fi
 
-# 6. Frontend Build Test (if frontend exists)
+# 7. Frontend Build Test (if frontend exists)
 if [ -f "frontend/package.json" ]; then
     print_status "Testing frontend build..."
     cd frontend
@@ -128,7 +140,8 @@ fi
 echo "🎉 All pre-push checks passed!"
 echo ""
 echo "✅ Ruff linting: PASSED"
-echo "✅ Black formatting: PASSED" 
+echo "✅ Black formatting: PASSED"
+echo "✅ MyPy type checking: PASSED"
 echo "✅ Backend tests: PASSED"
 if [ -f "tests/test_api.py" ]; then
     echo "✅ Integration tests: PASSED"
