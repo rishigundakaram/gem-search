@@ -12,15 +12,23 @@ const SearchContainer: React.FC = () => {
   const [query, setQuery] = useState<string>("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
 
   const handleSearch = async () => {
+    const trimmed = query.trim();
+    if (trimmed.length === 0) {
+      return;
+    }
+    setLoading(true);
+    setError(null);
     try {
-      const searchResults = await searchDocuments(query);
+      const searchResults = await searchDocuments(trimmed);
       setResults(searchResults);
-      setError(null);
     } catch (err) {
       setError("Failed to fetch search results");
       setResults([]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -33,6 +41,7 @@ const SearchContainer: React.FC = () => {
         query={query}
         setQuery={setQuery}
         handleSearch={handleSearch}
+        loading={loading}
       />
       {error && <Typography color="error">{error}</Typography>}
       <SearchResults results={results} />
