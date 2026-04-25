@@ -22,9 +22,17 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # Constants
 DEFAULT_USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+HTTP_TIMEOUT_SECONDS = 15
+DB_TIMEOUT_SECONDS = 30
+DB_LOCK_RETRY_SECONDS = 1
+DB_MAX_RETRIES = 3
+MIN_CONTENT_LENGTH = 50
+SCRAPE_DELAY_SECONDS = 0.1
+PROGRESS_REPORT_EVERY = 20
+SKIPPED_URL_EXTENSIONS = (".pdf", ".jpg", ".png", ".gif", ".css", ".js")
 
 
-def fetch_and_parse(url):
+def fetch_and_parse(url: str) -> tuple[str | None, str | None]:
     """
     Fetch and parse content from a URL using Trafilatura for superior text extraction.
 
@@ -37,13 +45,13 @@ def fetch_and_parse(url):
     try:
         # First, download the content with custom headers
         headers = {"User-Agent": DEFAULT_USER_AGENT}
-        downloaded = trafilatura.fetch_url(url, headers=headers, timeout=15)
+        downloaded = trafilatura.fetch_url(url, headers=headers, timeout=HTTP_TIMEOUT_SECONDS)
         if not downloaded:
             return None, None
 
         # Extract main text content with metadata
         content = trafilatura.extract(downloaded, include_comments=False, include_tables=True)
-        if not content or len(content.strip()) < 50:
+        if not content or len(content.strip()) < MIN_CONTENT_LENGTH:
             return None, None
 
         # Extract title metadata
@@ -84,14 +92,16 @@ def fetch_and_parse(url):
         # Final fallback: handle plain text files
         try:
             headers = {"User-Agent": DEFAULT_USER_AGENT}
-            response = requests.get(url, headers=headers, timeout=15, verify=False)
+            response = requests.get(
+                url, headers=headers, timeout=HTTP_TIMEOUT_SECONDS, verify=False
+            )
             response.raise_for_status()
 
             content_type = response.headers.get("content-type", "").lower()
 
             if "text/plain" in content_type:
                 content = response.text.strip()
-                if len(content) > 50:
+                if len(content) > MIN_CONTENT_LENGTH:
                     filename = url.split("/")[-1]
                     title = filename if filename else f"Text from {urlparse(url).netloc}"
                     return title, content
@@ -158,7 +168,7 @@ def scrape_links_to_database(links_file, db_path):
     return new_count
 
 
-def discover_links(url, same_domain_only=True):
+def discover_links(url: str, same_domain_only: bool = True) -> set[str]:
     """
     Discover links from a given URL using BeautifulSoup.
 
@@ -169,11 +179,13 @@ def discover_links(url, same_domain_only=True):
     Returns:
         set: Set of discovered URLs
     """
-    discovered_urls = set()
+    discovered_urls: set[str] = set()
 
     try:
         headers = {"User-Agent": DEFAULT_USER_AGENT}
-        response = requests.get(url, headers=headers, timeout=15, verify=False)
+        response = requests.get(
+            url, headers=headers, timeout=HTTP_TIMEOUT_SECONDS, verify=False
+        )
         response.raise_for_status()
         soup = BeautifulSoup(response.content, "html.parser")
 
@@ -201,10 +213,7 @@ def discover_links(url, same_domain_only=True):
                 continue
 
             # Skip common non-content URLs
-            if any(
-                ext in absolute_url.lower()
-                for ext in [".pdf", ".jpg", ".png", ".gif", ".css", ".js"]
-            ):
+            if any(ext in absolute_url.lower() for ext in SKIPPED_URL_EXTENSIONS):
                 continue
 
             discovered_urls.add(absolute_url)
@@ -216,7 +225,7 @@ def discover_links(url, same_domain_only=True):
     return discovered_urls
 
 
-def get_existing_urls(db_path):
+def get_existing_urls(db_path: str) -> set[str]:
     """
     Get all existing URLs from the database.
 
@@ -252,10 +261,9 @@ def insert_document_if_new(url, title, content, db_path, existing_urls):
         return False
 
     # Retry logic for database operations
-    max_retries = 3
-    for attempt in range(max_retries):
+    for attempt in range(DB_MAX_RETRIES):
         try:
-            conn = sqlite3.connect(db_path, timeout=30)
+            conn = sqlite3.connect(db_path, timeout=DB_TIMEOUT_SECONDS)
             cursor = conn.cursor()
 
             # Insert into documents table
@@ -287,8 +295,8 @@ def insert_document_if_new(url, title, content, db_path, existing_urls):
         except sqlite3.OperationalError as e:
             if conn:
                 conn.close()
-            if "database is locked" in str(e) and attempt < max_retries - 1:
-                time.sleep(1)  # Wait before retry
+            if "database is locked" in str(e) and attempt < DB_MAX_RETRIES - 1:
+                time.sleep(DB_LOCK_RETRY_SECONDS)
                 continue
             else:
                 break
@@ -343,8 +351,8 @@ def scrape_with_discovery(links_file, db_path, discover_depth=1, allow_cross_dom
             processed_urls.add(url)
             processed_in_batch += 1
 
-            # Show progress every 20 URLs
-            if processed_in_batch % 20 == 0:
+            # Show progress every PROGRESS_REPORT_EVERY URLs
+            if processed_in_batch % PROGRESS_REPORT_EVERY == 0:
                 print(
                     f"  Processed {processed_in_batch}/{len(urls_to_process)} URLs in this batch..."
                 )
@@ -365,7 +373,7 @@ def scrape_with_discovery(links_file, db_path, discover_depth=1, allow_cross_dom
                         next_level_urls.append(discovered_url)
 
             # Small delay to be respectful
-            time.sleep(0.1)
+            time.sleep(SCRAPE_DELAY_SECONDS)
 
         urls_to_process = next_level_urls
         current_depth += 1
@@ -527,10 +535,7 @@ def parse_links_from_html(html_content, base_url, same_domain_only=True):
                 continue
 
             # Skip common non-content URLs
-            if any(
-                ext in absolute_url.lower()
-                for ext in [".pdf", ".jpg", ".png", ".gif", ".css", ".js"]
-            ):
+            if any(ext in absolute_url.lower() for ext in SKIPPED_URL_EXTENSIONS):
                 continue
 
             discovered_urls.add(absolute_url)
