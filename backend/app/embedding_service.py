@@ -38,7 +38,7 @@ class EmbeddingService:
         else:
             return "cpu"
 
-    def _load_model(self):
+    def _load_model(self) -> None:
         """Load the model and tokenizer."""
         try:
             logger.info(f"Loading Jina CLIP v2 model: {self.model_name}")
